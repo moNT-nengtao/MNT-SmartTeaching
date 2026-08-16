@@ -1,0 +1,58 @@
+# ==================== 开发环境配置 ====================
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/smart_teaching?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      connection-timeout: 30000
+      pool-name: SmartTeachingHikariPool
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      timeout: 10000ms
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 100MB
+      file-size-threshold: 2MB
+      location: ./temp
+
+# 开发环境日志级别更详细
+logging:
+  level:
+    root: INFO
+    com.smartteaching: DEBUG
+    com.smartteaching.**.mapper: DEBUG
+    org.springframework.web: DEBUG
+  file:
+    name: ./logs/smart-teaching-dev.log
+
+# MyBatis-Plus 开发环境配置（覆盖主配置）
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 开发环境可以缩短过期时间便于测试
+jwt:
+  expiration: 86400000  # 1 天
