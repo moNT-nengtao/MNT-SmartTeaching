@@ -107,8 +107,8 @@ const fetchList = async () => {
   try {
     searchParams.tag = activeTag.value
     const res = await getQuestionList(searchParams)
-    questionList.value = res.data?.list || []
-    total.value = res.data?.total || 0
+    questionList.value = res.data?.list ?? res.data?.records ?? []
+    total.value = res.data?.total ?? 0
   } finally {
     loading.value = false
   }

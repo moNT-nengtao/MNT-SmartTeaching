@@ -84,8 +84,8 @@ const fetchList = async () => {
   loading.value = true
   try {
     const res = await getNoticeList(searchParams)
-    noticeList.value = res.data?.list || []
-    total.value = res.data?.total || 0
+    noticeList.value = res.data?.list ?? res.data?.records ?? []
+    total.value = res.data?.total ?? 0
   } finally {
     loading.value = false
   }

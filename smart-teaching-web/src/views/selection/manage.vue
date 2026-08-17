@@ -82,8 +82,8 @@ const fetchList = async () => {
   loading.value = true
   try {
     const res = await getSelectionCourseList(searchParams)
-    tableData.value = res.data?.list || []
-    total.value = res.data?.total || 0
+    tableData.value = res.data?.list ?? res.data?.records ?? []
+    total.value = res.data?.total ?? 0
   } finally {
     loading.value = false
   }

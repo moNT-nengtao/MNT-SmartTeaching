@@ -106,12 +106,13 @@ const fetchConfig = async () => {
 const fetchList = async () => {
   try {
     const res = await getSelectionCourseList(searchParams)
-    courseList.value = (res.data?.list || []).map((c) => ({
+    const list = res.data?.list ?? res.data?.records ?? []
+    courseList.value = list.map((c) => ({
       ...c,
       remaining: c.maxStudents - c.selectedCount,
       rating: c.avgScore || 0
     }))
-    total.value = res.data?.total || 0
+    total.value = res.data?.total ?? 0
   } catch (e) {}
 }
 

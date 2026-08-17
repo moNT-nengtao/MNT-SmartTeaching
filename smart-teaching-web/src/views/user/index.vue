@@ -15,7 +15,7 @@
 
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="username" label="账号" width="120" />
-        <el-table-column prop="name" label="姓名" width="100" />
+        <el-table-column prop="realName" label="姓名" width="100" />
         <el-table-column label="角色" width="100">
           <template #default="{ row }">
             <el-tag :type="roleTagType(row.role)">{{ roleText(row.role) }}</el-tag>
@@ -88,9 +88,8 @@
     </el-dialog>
   </div>
 </template>
-
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Upload } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
@@ -107,13 +106,16 @@ const formRef = ref(null)
 const collegeList = ref([])
 const classList = ref([])
 
+// 查询条件：补充status
 const searchParams = reactive({
   page: 1,
   pageSize: 10,
   keyword: '',
-  role: ''
+  role: '',
+  status: null
 })
 
+// 搜索表单配置，增加状态筛选
 const searchFields = [
   { prop: 'keyword', label: '关键词', type: 'input', placeholder: '账号/姓名' },
   {
@@ -121,13 +123,25 @@ const searchFields = [
     label: '角色',
     type: 'select',
     options: [
+      { label: '全部', value: '' },
       { label: '管理员', value: 'admin' },
       { label: '教师', value: 'teacher' },
       { label: '学生', value: 'student' }
     ]
+  },
+  {
+    prop: 'status',
+    label: '状态',
+    type: 'select',
+    options: [
+      { label: '全部', value: null },
+      { label: '正常', value: 1 },
+      { label: '禁用', value: 0 }
+    ]
   }
 ]
 
+// form表单，补齐email，字段注意 realName → name
 const form = reactive({
   id: null,
   username: '',
@@ -135,7 +149,8 @@ const form = reactive({
   role: 'student',
   collegeId: null,
   classId: null,
-  phone: ''
+  phone: '',
+  email: ''
 })
 
 const rules = {
@@ -153,29 +168,65 @@ const fetchList = async () => {
   loading.value = true
   try {
     const res = await getUserList(searchParams)
-    tableData.value = res.data?.list || []
-    total.value = res.data?.total || 0
+    tableData.value = res.data?.list ?? res.data?.records ?? []
+    total.value = res.data?.total ?? 0
   } finally {
     loading.value = false
   }
 }
 
+// 获取全部学院
 const fetchColleges = async () => {
   const res = await getCollegeList()
   collegeList.value = res.data || []
 }
 
+// 根据学院id加载班级
+const fetchClassByCollege = async (collegeId) => {
+  if (!collegeId) {
+    classList.value = []
+    return
+  }
+  const res = await getClassList(collegeId)
+  classList.value = res.data || []
+}
+
+// 监听form.collegeId变化，联动班级下拉
+watch(() => form.collegeId, (newVal) => {
+  form.classId = null
+  fetchClassByCollege(newVal)
+})
+
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增用户'
-  Object.assign(form, { id: null, username: '', name: '', role: 'student', collegeId: null, classId: null, phone: '' })
+  Object.assign(form, {
+    id: null,
+    username: '',
+    name: '',
+    role: 'student',
+    collegeId: null,
+    classId: null,
+    phone: '',
+    email: ''
+  })
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑用户'
-  Object.assign(form, row)
+  Object.assign(form, {
+    id: row.id,
+    username: row.username,
+    name: row.realName,
+    role: row.role,
+    collegeId: row.collegeId,
+    classId: row.classId,
+    phone: row.phone,
+    email: row.email
+  })
+  fetchClassByCollege(row.collegeId)
   dialogVisible.value = true
 }
 
@@ -191,7 +242,7 @@ const handleToggleStatus = async (row) => {
 }
 
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定删除用户「${row.name}」吗？`, '提示', {
+  ElMessageBox.confirm(`确定删除用户「${row.realName}」吗？`, '提示', {
     type: 'warning'
   }).then(async () => {
     await deleteUser(row.id)
