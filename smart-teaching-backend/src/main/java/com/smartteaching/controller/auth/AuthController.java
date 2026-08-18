@@ -2,6 +2,7 @@ package com.smartteaching.controller.auth;
 
 import com.smartteaching.common.dto.UserChangePasswordDTO;
 import com.smartteaching.common.dto.UserLoginDTO;
+import com.smartteaching.common.exception.TokenInvalidException;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
 import com.smartteaching.common.vo.UserLoginVO;
@@ -41,10 +42,9 @@ public class AuthController {
     public Result<UserLoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO) {
         log.info("用户登录，参数：{}", userLoginDTO.getUsername());
 
-        //校验账号密码，拿到用户VO
         User user = authService.login(userLoginDTO);
 
-        // ========== 读取Redis令牌版本号 ==========
+        // 读取Redis令牌
         String redisKey = "user:token:version:" + user.getId();
         String versionStr = stringRedisTemplate.opsForValue().get(redisKey);
         Long tokenVersion;
@@ -55,15 +55,15 @@ public class AuthController {
             tokenVersion = Long.parseLong(versionStr);
         }
 
-        // 调用重载方法，把 username、userId、tokenVersion 全部写入JWT载荷
+        // 调用重载方法写入JWT载荷
         String token = jwtUtil.generateToken(user.getUsername(), user.getId(), tokenVersion);
+        log.info("Token: {}", token);
 
-        //组装VO，复制属性
+        //组装
         UserLoginVO loginVO = new UserLoginVO();
         BeanUtils.copyProperties(user, loginVO);
         loginVO.setToken(token);
 
-        //loginVO里面带了token
         return Result.success(loginVO);
 
     }
@@ -86,7 +86,6 @@ public class AuthController {
         // 组装VO
         UserLoginVO loginVO = new UserLoginVO();
         BeanUtils.copyProperties(user, loginVO);
-        // 注意：这里不需要再生成token
 
         return Result.success(loginVO);
     }
@@ -98,22 +97,26 @@ public class AuthController {
      * @param authorization
      * @return
      */
-//    第一步：修改 JwtUtil，增加获取 token 过期时间方法
-//    第二步：AuthController 添加 logout 接口
-//    第三步：修改 JWT 过滤器，增加黑名单校验（核心！）
     @PostMapping("/logout")
     public Result<Void> logout(@RequestHeader("Authorization") String authorization) {
         log.info("用户登出：{}", authorization);
 
-        //去掉Bearer前缀
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7);
-            //获取token剩余有效期
+        String token;
+        //去前缀
+        try {
+            token = jwtUtil.extractToken(authorization);
+        } catch (TokenInvalidException e) {
+            log.warn("登出Authorization头格式异常");
+            return Result.success(null);
+        }
+        //判断token状态
+        try {
             long remainMs = jwtUtil.getTokenRemainExpireMs(token);
             if (remainMs > 0) {
-                //放入黑名单，key: jwt:blacklist:{token}
                 stringRedisTemplate.opsForValue().set("jwt:blacklist:" + token, "", remainMs, TimeUnit.MILLISECONDS);
             }
+        } catch (TokenInvalidException e) {
+            log.warn("登出token无效，无需拉黑");
         }
         log.info("用户执行登出操作");
         return Result.success(null);
@@ -125,13 +128,10 @@ public class AuthController {
      *
      * @return
      */
-    //老密码，新密码，检查旧密码，更新数据库密码（md5），令当前用户token失效，跳转回登录页面
     @PutMapping("/changePassword")
     public Result changePassword(@RequestBody UserChangePasswordDTO userChangePasswordDTO) {
         log.info("修改密码：{}", userChangePasswordDTO);
-
         authService.oldPasswordVerification(userChangePasswordDTO);
-        // TODO:记得检查前端在返回后有没有跳转回登录页面
         return Result.success();
     }
 

@@ -48,6 +48,13 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
 
+        <!--hutool-->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.30</version>
+        </dependency>
+
 
         <!-- Spring Boot Test -->
         <dependency>

@@ -41,29 +41,23 @@ public class AuthServiceImpl implements AuthService {
         String username = userLoginDTO.getUsername();
         String password = userLoginDTO.getPassword();
         String selectedRole = userLoginDTO.getRole();
-
-        //进行md5加密，然后再进行比对
+        //md5加密传入的密码，和库中比对
         password = DigestUtils.md5DigestAsHex(password.getBytes());
-
-        //1、创建条件容器
+        // 查询
         LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
-        //2、往容器添加两个where条件，wrapper对象只存条件
         wrapper.eq(User::getUsername, username).eq(User::getStatus, 1);
-        //3、访问数据库,selectOne()是BaseMapper 自带的内置方法
         User user = userMapper.selectOne(wrapper);
 
         if(user == null){
             throw new BaseException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
         if (!password.equals(user.getPassword())) {
-            //密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
         if (selectedRole != null && !selectedRole.isBlank() && !selectedRole.equalsIgnoreCase(user.getRole())) {
             throw new BaseException(MessageConstant.ROLE_MISMATCH);
         }
-
-        //更新最后登录时间
+        // 更新最后登录时间
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
 
@@ -85,7 +79,6 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 效验旧密码
      */
-    //DTO:oldPassword\newPassword
     @Override
     @Transactional(rollbackFor = BaseException.class)
     public void oldPasswordVerification(UserChangePasswordDTO userChangePasswordDTO) {
@@ -101,7 +94,6 @@ public class AuthServiceImpl implements AuthService {
 
         //3. 修改密码
         String newPwd = DigestUtils.md5DigestAsHex(userChangePasswordDTO.getNewPassword().getBytes());
-        //组装
         LambdaUpdateWrapper<User> updateWrapper = Wrappers.lambdaUpdate();
         updateWrapper.eq(User::getId, loginUser.getId()).set(User::getPassword, newPwd);
         //修改数据库

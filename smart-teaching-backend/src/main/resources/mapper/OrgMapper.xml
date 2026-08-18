@@ -1,7 +1,48 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.OrgMapper">
+
+    <!-- 学院查询 -->
+    <select id="selectCollegeList" resultType="com.smartteaching.entity.org.College">
+        SELECT id,name,code,parent_id,sort,status,create_time,update_time
+        FROM org_college
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY sort ASC
+    </select>
+
+    <!-- 专业查询 -->
+    <select id="selectMajorList" resultType="com.smartteaching.entity.org.Major">
+        SELECT id,college_id,name,code,parent_id,sort,status,create_time,update_time
+        FROM org_major
+        <where>
+            <if test="collegeId != null">
+                college_id = #{collegeId}
+            </if>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY sort ASC
+    </select>
+
+    <!-- 班级查询 -->
+    <select id="selectClassList" resultType="com.smartteaching.entity.org.ClassInfo">
+        SELECT id,major_id,name,code,parent_id,sort,status,grade_year,create_time,update_time
+        FROM org_class
+        <where>
+            <if test="majorId != null">
+                major_id = #{majorId}
+            </if>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY sort ASC
+    </select>
 
 </mapper>

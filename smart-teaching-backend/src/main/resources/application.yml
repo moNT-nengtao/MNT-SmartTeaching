@@ -52,10 +52,13 @@ jwt:
 # 本地上传路径（Windows/Mac自动适配，写相对路径）
 file:
   upload-path: ./uploads
+  avatar:
+    relative-path: uploads/avatars
 
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
 
 logging:
   level:

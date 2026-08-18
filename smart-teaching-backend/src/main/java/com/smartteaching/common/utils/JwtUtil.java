@@ -1,5 +1,6 @@
 package com.smartteaching.common.utils;
 
+import com.smartteaching.common.exception.TokenInvalidException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -12,11 +13,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * JWT（JSON Web Token）工具类
- * <p>
- * 功能：生成 Token、解析 Token、验证 Token 合法性，支持token版本号作废
- * <p>
- * 配置来源：application.yml 中的 jwt.* 配置项
+ * JWT 工具类
+ *
+ * <p>提供 Token 生成、解析、验证、提取等功能</p>
+ *
+ * <p><b>可用方法：</b></p>
+ * <ul>
+ *   <li>生成 Token：{@link #generateToken(String)}、{@link #generateToken(String, Long, Long)}</li>
+ *   <li>解析 Token：{@link #getUsernameByToken(String)}、{@link #getUserIdByToken(String)}、{@link #getTokenVersionByToken(String)}</li>
+ *   <li>验证 Token：{@link #validateToken(String)}</li>
+ *   <li>从请求头提取：{@link #extractToken(String)}、{@link #extractAndValidateToken(String)}</li>
+ *   <li>从请求头直接获取用户信息：{@link #getUserIdFromHeader(String)}、{@link #getUsernameFromHeader(String)}</li>
+ *   <li>获取剩余过期时间：{@link #getTokenRemainExpireMs(String)}</li>
+ * </ul>
  *
  * @author SmartTeaching
  * @since 1.0.0
@@ -66,13 +75,73 @@ public class JwtUtil {
 
     /**
      * 对象属性全部注入完成后，初始化 HMAC 签名密钥
-     * <p>
-     * 执行时机：Spring 容器完成依赖注入后自动调用
-     * 作用：将字符串密钥转换为 JWT 库所需的 SecretKey 对象
      */
     @PostConstruct
     public void initSecretKey() {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    // ==================== Token 提取方法 ====================
+
+    /**
+     * 从 Authorization 头中提取 Token（去掉 Bearer 前缀）
+     *
+     * @param authHeader Authorization 头内容
+     * @return 纯净的 Token 字符串
+     * @throws TokenInvalidException 如果 authHeader 为空或格式错误
+     */
+    public String extractToken(String authHeader) {
+        if (authHeader == null || authHeader.trim().isEmpty()) {
+            throw new TokenInvalidException("Authorization 头不能为空");
+        }
+
+        String prefix = getTokenPrefix();
+        if (!authHeader.startsWith(prefix)) {
+            throw new TokenInvalidException(
+                    String.format("Authorization 头格式错误，应以 '%s' 开头", prefix)
+            );
+        }
+
+        return authHeader.substring(prefix.length()).trim();
+    }
+
+    /**
+     * 从 Authorization 头中提取并验证 Token
+     *
+     * @param authHeader Authorization 头内容
+     * @return 有效的 Token 字符串
+     * @throws TokenInvalidException 如果 Token 无效或过期
+     */
+    public String extractAndValidateToken(String authHeader) {
+        String token = extractToken(authHeader);
+        if (!validateToken(token)) {
+            throw new TokenInvalidException("Token 无效或已过期，请重新登录");
+        }
+        return token;
+    }
+
+    /**
+     * 从 Authorization 头获取用户ID
+     *
+     * @param authHeader Authorization 头内容
+     * @return 用户ID
+     * @throws TokenInvalidException 如果 Token 无效或过期
+     */
+    public Long getUserIdFromHeader(String authHeader) {
+        String token = extractAndValidateToken(authHeader);
+        return getUserIdByToken(token);
+    }
+
+    /**
+     * 从 Authorization 头获取用户名
+     *
+     * @param authHeader Authorization 头内容
+     * @return 用户名
+     * @throws TokenInvalidException 如果 Token 无效或过期
+     */
+    public String getUsernameFromHeader(String authHeader) {
+        String token = extractAndValidateToken(authHeader);
+        return getUsernameByToken(token);
     }
 
     // ==================== 核心业务方法 ====================
@@ -84,76 +153,96 @@ public class JwtUtil {
      * @return 生成的 JWT Token 字符串
      */
     public String generateToken(String username) {
-        return generateToken(username,null,null);
+        return generateToken(username, null, null);
     }
 
     /**
      * 【新】生成JWT，携带 userId 和 tokenVersion令牌版本号
-     * @param username 用户名
-     * @param userId 用户主键ID
+     *
+     * @param username     用户名
+     * @param userId       用户主键ID
      * @param tokenVersion redis中的令牌版本号
      * @return jwt token
      */
     public String generateToken(String username, Long userId, Long tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", username);
-        if(userId != null){
+        if (userId != null) {
             claims.put("userId", userId);
         }
-        if(tokenVersion != null){
+        if (tokenVersion != null) {
             claims.put("tokenVersion", tokenVersion);
         }
 
         return Jwts.builder()
-                .claims(claims)                       // 设置载荷（携带的用户信息）
-                .issuedAt(new Date())                 // 签发时间
-                .expiration(new Date(System.currentTimeMillis() + expiration)) // 过期时间
-                .signWith(secretKey)                  // 使用 HMAC 密钥签名
-                .compact();                           // 压缩为最终 Token 字符串
+                .claims(claims)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(secretKey)
+                .compact();
     }
-
 
     /**
      * 从 Token 中解析出用户名（subject）
      *
      * @param token JWT Token 字符串
      * @return 用户名
+     * @throws TokenInvalidException 如果 Token 无效或解析失败
      */
     public String getUsernameByToken(String token) {
-        Claims claims = parseToken(token);
-        return claims.getSubject();
+        try {
+            Claims claims = parseToken(token);
+            return claims.getSubject();
+        } catch (JwtException e) {
+            throw new TokenInvalidException("Token 解析失败：" + e.getMessage());
+        }
     }
 
     /**
      * 从token获取用户ID
+     *
+     * @param token JWT Token 字符串
+     * @return 用户ID
+     * @throws TokenInvalidException 如果 Token 无效或解析失败
      */
-    public Long getUserIdByToken(String token){
-        Claims claims = parseToken(token);
-        return claims.get("userId",Long.class);
+    public Long getUserIdByToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("userId", Long.class);
+        } catch (JwtException e) {
+            throw new TokenInvalidException("Token 解析失败：" + e.getMessage());
+        }
     }
 
     /**
      * 从token获取令牌版本号
+     *
+     * @param token JWT Token 字符串
+     * @return 令牌版本号
+     * @throws TokenInvalidException 如果 Token 无效或解析失败
      */
-    public Long getTokenVersionByToken(String token){
-        Claims claims = parseToken(token);
-        return claims.get("tokenVersion",Long.class);
+    public Long getTokenVersionByToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("tokenVersion", Long.class);
+        } catch (JwtException e) {
+            throw new TokenInvalidException("Token 解析失败：" + e.getMessage());
+        }
     }
 
     /**
      * 解析 Token，获取所有载荷数据（Claims）
-     * <p>
-     * Claims 中可包含：subject(用户名)、userId、tokenVersion、issuedAt(签发时间)、expiration(过期时间) 等
      *
      * @param token JWT Token 字符串
      * @return 载荷对象
+     * @throws JwtException 如果 Token 无效或解析失败
      */
     private Claims parseToken(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)                // 使用同一密钥验证签名
+                .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(token)             // 解析并验证签名
-                .getPayload();                        // 获取载荷部分
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**
@@ -166,7 +255,7 @@ public class JwtUtil {
      */
     public boolean validateToken(String token) {
         try {
-            parseToken(token);  // 能正常解析说明 Token 合法
+            parseToken(token);
             return true;
         } catch (ExpiredJwtException e) {
             // Token 已过期
@@ -182,15 +271,23 @@ public class JwtUtil {
         return false;
     }
 
-    // 获取token剩余过期毫秒时间，用于redis黑名单过期
-    public long getTokenRemainExpireMs(String token){
-        Claims claims = parseToken(token);
-        return claims.getExpiration().getTime() - System.currentTimeMillis();
+    /**
+     * 获取token剩余过期毫秒时间，用于redis黑名单过期
+     *
+     * @param token JWT Token 字符串
+     * @return 剩余毫秒数
+     * @throws TokenInvalidException 如果 Token 无效或解析失败
+     */
+    public long getTokenRemainExpireMs(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.getExpiration().getTime() - System.currentTimeMillis();
+        } catch (JwtException e) {
+            throw new TokenInvalidException("Token 解析失败：" + e.getMessage());
+        }
     }
 
     // ==================== Getter & Setter ====================
-    // 必须要有！@ConfigurationProperties 通过 setter 方法反射注入配置值
-    // 如果没有 setter，Spring Boot 无法将 yml 中的值绑定到这些字段
 
     public String getSecret() {
         return secret;
@@ -217,7 +314,7 @@ public class JwtUtil {
     }
 
     public String getTokenPrefix() {
-        return tokenPrefix;
+        return tokenPrefix != null ? tokenPrefix : "Bearer ";
     }
 
     public void setTokenPrefix(String tokenPrefix) {

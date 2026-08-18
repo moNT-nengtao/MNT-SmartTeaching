@@ -4,4 +4,52 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.UserMapper">
 
+    <resultMap id="UserQueryVOMap" type="com.smartteaching.common.vo.UserQueryVO">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="real_name" property="realName"/>
+        <result column="role" property="role"/>
+        <result column="status" property="status"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="college_id" property="collegeId"/>
+        <result column="class_id" property="classId"/>
+        <result column="collegeName" property="collegeName"/>
+        <result column="className" property="className"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectUserPage" resultMap="UserQueryVOMap">
+        SELECT
+        u.id,
+        u.username,
+        u.real_name,
+        u.role,
+        u.status,
+        u.phone,
+        u.email,
+        u.college_id,
+        u.class_id,
+        oc.name AS collegeName,
+        ocl.name AS className,
+        u.create_time,
+        u.update_time
+        FROM `sys_user` u
+        LEFT JOIN org_college oc ON u.college_id = oc.id
+        LEFT JOIN org_class ocl ON u.class_id = ocl.id
+        <where>
+            <if test="dto.keyword != null and dto.keyword.trim() != ''">
+                (u.username LIKE CONCAT('%', #{dto.keyword}, '%') OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%'))
+            </if>
+            <if test="dto.role != null and dto.role.trim() != ''">
+                AND u.role = #{dto.role}
+            </if>
+            <if test="dto.status != null">
+                AND u.status = #{dto.status}
+            </if>
+        </where>
+        ORDER BY u.create_time DESC
+    </select>
+
 </mapper>

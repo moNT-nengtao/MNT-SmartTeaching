@@ -1,8 +1,6 @@
 package com.smartteaching.entity.user;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.smartteaching.entity.BaseEntity;
 import lombok.Data;
 
@@ -40,4 +38,13 @@ public class User extends BaseEntity {
     private Long majorId;
 
     private LocalDateTime lastLoginTime;
+
+    // 创建时间 - 插入时自动填充
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    // 更新时间 - 插入和更新时自动填充
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+
 }

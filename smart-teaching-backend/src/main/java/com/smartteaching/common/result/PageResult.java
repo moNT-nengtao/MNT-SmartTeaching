@@ -8,11 +8,15 @@ import java.util.List;
  */
 @Data
 public class PageResult<T> {
-    private Long total;       //总记录数
-    private Long pages;       //总页数
-    private Long current;     //当前页
-    private Long size;        //每页条数
-    private List<T> records;  //数据列表
+    private Long total;
+    private Long pages;
+    private Long current;
+    private Long size;
+    private List<T> records;
+
+    public List<T> getList(){
+        return records;
+    }
 
     public static <T> PageResult<T> build(Long total, Long pages, Long current, Long size, List<T> records) {
         PageResult<T> page = new PageResult<>();
