@@ -23,10 +23,12 @@
       <!-- 用户下拉 -->
       <el-dropdown trigger="click" @command="handleCommand">
         <div class="user-info">
-          <el-avatar :size="32" :src="userStore.userInfo?.avatar">
-            {{ userStore.userInfo?.name?.charAt(0) || 'U' }}
+          <el-avatar :size="32" :src="avatarSrc" @error="handleAvatarError">
+            <span v-if="avatarStage === 'initial'">
+              {{ userStore.userInfo?.realName?.charAt(0) || 'U' }}
+            </span>
           </el-avatar>
-          <span class="username">{{ userStore.userInfo?.name || '用户' }}</span>
+          <span class="username">{{ userStore.userInfo?.realName || '用户' }}</span>
           <el-icon><ArrowDown /></el-icon>
         </div>
         <template #dropdown>
@@ -45,13 +47,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useAppStore } from '@/store/app'
 import { useUserStore } from '@/store/user'
 import { getUnreadCount } from '@/api/notice'
 import { formatDate } from '@/utils/format'
+import defaultAvatar from '../../assets/images/default.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +64,20 @@ const userStore = useUserStore()
 const currentTitle = computed(() => route.meta.title || '')
 const unreadCount = ref(0)
 const currentTime = ref(formatDate(new Date(), 'YYYY-MM-DD HH:mm'))
+const avatarStage = ref(userStore.userInfo?.avatar ? 'user' : 'default')
+const avatarSrc = computed(() => {
+  if (avatarStage.value === 'user') return userStore.userInfo?.avatar
+  if (avatarStage.value === 'default') return defaultAvatar
+  return undefined
+})
+
+watch(
+  () => userStore.userInfo?.avatar,
+  (avatar) => {
+    avatarStage.value = avatar ? 'user' : 'default'
+  },
+  { immediate: true }
+)
 
 let timer = null
 
@@ -75,6 +92,14 @@ const fetchUnreadCount = async () => {
 
 const goToNotice = () => {
   router.push('/notice/list')
+}
+
+const handleAvatarError = (event) => {
+  if (avatarStage.value === 'user') {
+    avatarStage.value = 'default'
+  } else if (avatarStage.value === 'default') {
+    avatarStage.value = 'initial'
+  }
 }
 
 const handleCommand = async (command) => {

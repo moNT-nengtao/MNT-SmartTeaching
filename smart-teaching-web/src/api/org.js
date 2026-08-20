@@ -61,6 +61,15 @@ export function deleteOrg(id, type) {
   })
 }
 
+// 将学生移出班级，单个学生也必须以数组传递
+export function removeStudentsFromClass(ids) {
+  return request({
+    url: '/org/students/remove',
+    method: 'post',
+    data: { ids }
+  })
+}
+
 // 批量导入
 export function batchImportOrg(data) {
   return request({
