@@ -125,4 +125,53 @@ public interface OrgMapper {
      */
     @Update("UPDATE org_class SET status = 0, update_time = NOW() WHERE id = #{id}")
     void deleteClassById(Long id);
+
+    /**
+     * 判断college表id是否存在
+     * @param id
+     * @return
+     */
+    @Select("SELECT COUNT(1) FROM org_college WHERE id = #{id}")
+    Long countCollegeById(@Param("id") Long id);
+
+    /**
+     * 判断major表id是否存在
+     * @param id
+     * @return
+     */
+    @Select("SELECT COUNT(1) FROM org_major WHERE id = #{id}")
+    Long countMajorById(@Param("id") Long id);
+
+
+    //========UserExcelValidateUtil 调用=========
+    /**
+     * 根据学院名称查询 ID
+     */
+    Long getCollegeIdByName(@Param("name") String name);
+
+    /**
+     * 根据专业名称查询 ID
+     */
+    Long getMajorIdByName(@Param("name") String name);
+
+    /**
+     * 根据班级名称查询 ID
+     */
+    Long getClassIdByName(@Param("name") String name);
+
+    /**
+     * 批量查询学院（根据名称列表）
+     */
+    List<College> getCollegesByNames(@Param("names") List<String> names);
+
+    /**
+     * 批量查询专业（根据名称列表）
+     */
+    List<Major> getMajorsByNames(@Param("names") List<String> names);
+
+    /**
+     * 批量查询班级（根据名称列表）
+     */
+    List<ClassInfo> getClassesByNames(@Param("names") List<String> names);
+
 }

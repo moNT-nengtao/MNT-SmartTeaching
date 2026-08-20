@@ -79,7 +79,7 @@ public class UserController {
 
 
     /**
-     * 删除用户
+     * 删除用户(硬删除！)
      * @return
      */
     @DeleteMapping("/{id}")
@@ -119,6 +119,11 @@ public class UserController {
      */
     @PostMapping("/batchImport")
     public Result batchImportUser(@RequestParam("file") MultipartFile file){
+
+        if(file.isEmpty()){
+            log.warn("批量导入失败:文件为空");
+            return  Result.error("文件不能为空，请选择要上传的 Excel 文件");
+        }
 
         log.info("批量导入用户，文件名: {}", file.getOriginalFilename());
 

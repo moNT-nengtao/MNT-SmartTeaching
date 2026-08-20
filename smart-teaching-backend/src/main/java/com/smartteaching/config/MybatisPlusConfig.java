@@ -70,10 +70,6 @@ public class MybatisPlusConfig {
             // 创建时间、更新时间自动赋值当前时间
             this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
             this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-
-            // createBy、updateBy 需要拿到登录用户ID，这里先注释
-            // this.strictInsertFill(metaObject, "createBy", Long.class, getCurrentUserId());
-            // this.strictInsertFill(metaObject, "updateBy", Long.class, getCurrentUserId());
         }
 
         /**
@@ -83,8 +79,6 @@ public class MybatisPlusConfig {
         public void updateFill(MetaObject metaObject) {
             // 更新时间自动刷新
             this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-
-            // this.strictUpdateFill(metaObject, "updateBy", Long.class, getCurrentUserId());
         }
 
     }

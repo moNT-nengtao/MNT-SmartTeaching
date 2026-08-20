@@ -13,9 +13,10 @@ import com.smartteaching.common.dto.UserSaveDTO;
 import com.smartteaching.common.dto.UserQueryDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.result.PageResult;
-import com.smartteaching.common.utils.ExcelValidateUtil;
+import com.smartteaching.common.utils.UserExcelValidateUtil;
 import com.smartteaching.common.vo.UserQueryVO;
 import com.smartteaching.entity.user.User;
+import com.smartteaching.mapper.OrgMapper;
 import com.smartteaching.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private OrgMapper orgMapper;
 
     // yml读取头像存放相对目录
     @Value("${file.avatar.relative-path}")
@@ -338,62 +342,96 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchImportUsers(MultipartFile file) {
-        List<User> validUsers = new ArrayList<>();
+        List<UserExcelDTO> validDataList = new ArrayList<>();
         List<String> errorList = new ArrayList<>();
+        List<User> validUsers = new ArrayList<>();
 
-        try{
-            EasyExcel.read(file.getInputStream(), UserExcelDTO.class,new ReadListener<UserExcelDTO>() {
+        try {
+            EasyExcel.read(file.getInputStream(), UserExcelDTO.class, new ReadListener<UserExcelDTO>() {
                 private int rowNum = 1;
 
                 @Override
-                public void invoke(UserExcelDTO data,AnalysisContext context){
+                public void invoke(UserExcelDTO data, AnalysisContext context) {
                     rowNum++;
-                    //调用工具：格式检查、记录重名、构建实体（密码md5）
-                    List<String> errors = ExcelValidateUtil.validateUser(
+
+                    List<String> errors = UserExcelValidateUtil.validateUser(
                             data.getUsername(),
                             data.getRealName(),
                             data.getPassword(),
                             data.getPhone(),
-                            data.getEmail());
+                            data.getEmail()
+                    );
 
-                    if(!errors.isEmpty()){
-                        errorList.add(ExcelValidateUtil.formatError(rowNum,data.getUsername(),errors));
-                        return;
+                    if (!errors.isEmpty()) {
+                        errorList.add(UserExcelValidateUtil.formatError(rowNum, data.getUsername(), errors));
+                    } else {
+                        data.setRowNum(rowNum);
+                        validDataList.add(data);
                     }
-
-                    User user = ExcelValidateUtil.buildUser(data,DEFAULT_AVATAR);
-                    validUsers.add(user);
                 }
-                //回调
+
                 @Override
-                public void doAfterAllAnalysed(AnalysisContext context){
-                    log.info("Excel 解析完成，有效数据 {} 条，错误 {} 条",
-                            validUsers.size(), errorList.size());
+                public void doAfterAllAnalysed(AnalysisContext context) {
+                    log.info("Excel 解析完成，基础校验通过 {} 条，错误 {} 条",
+                            validDataList.size(), errorList.size());
                 }
             }).sheet().doRead();
-        } catch (IOException e){
-            log.error(MessageConstant.EXCEL_READ_IO_FAIL, e);
+
+        } catch (IOException e) {
+            log.error("读取 Excel 文件失败", e);
             throw new RuntimeException("读取 Excel 文件失败: " + e.getMessage());
         }
-        //事务介入校验结果,有错全回滚
-        if(!errorList.isEmpty()){
-            String errorMsg = String.format(MessageConstant.EXCEL_IMPORT_VALID_ERROR_TPL, errorList.size(),String.join("；", errorList));
-            throw new BaseException(errorMsg);
+
+        if (!errorList.isEmpty()) {
+            throw new BaseException(String.format("导入失败，共 %d 条错误：%s",
+                    errorList.size(), String.join("；", errorList)));
         }
-        //导入
-        int successCount = 0;
-        for (User user : validUsers) {
-            try
-                {
-                userMapper.insert(user);
-                successCount++;
-                } catch (DuplicateKeyException e) {
-                throw new BaseException("账号 " + user.getUsername() + MessageConstant.EXCEL_IMPORT_ACCOUNT_EXIST);
-            } catch (Exception e){
-                log.error("用户插入失败，账号: {}", user.getUsername(), e);
-                throw new BaseException(MessageConstant.EXCEL_IMPORT_COMMON_FAIL + e.getMessage());
+
+        // 批量校验组织名称
+        List<UserExcelValidateUtil.OrgValidateResult> orgResults =
+                UserExcelValidateUtil.batchValidateAndConvertOrgNames(validDataList, orgMapper);
+
+        // 检查组织名称校验结果
+        for (int i = 0; i < validDataList.size(); i++) {
+            UserExcelDTO data = validDataList.get(i);
+            UserExcelValidateUtil.OrgValidateResult orgResult = orgResults.get(i);
+
+            if (!orgResult.isValid()) {
+                // 使用保存的行号
+                int rowNum = data.getRowNum();
+                errorList.add(UserExcelValidateUtil.formatError(rowNum, data.getUsername(), orgResult.getErrors()));
+            } else {
+                User user = UserExcelValidateUtil.buildUser(
+                        data,
+                        DEFAULT_AVATAR,
+                        orgResult.getCollegeId(),
+                        orgResult.getMajorId(),
+                        orgResult.getClassId()
+                );
+                validUsers.add(user);
             }
         }
+
+        // 如果有组织名称错误，全部回滚
+        if (!errorList.isEmpty()) {
+            throw new BaseException(String.format("导入失败，共 %d 条错误：%s",
+                    errorList.size(), String.join("；", errorList)));
+        }
+
+        // 批量插入用户
+        int successCount = 0;
+        for (User user : validUsers) {
+            try {
+                userMapper.insert(user);
+                successCount++;
+            } catch (DuplicateKeyException e) {
+                throw new BaseException("账号 " + user.getUsername() + " 已存在");
+            } catch (Exception e) {
+                log.error("用户插入失败，账号: {}", user.getUsername(), e);
+                throw new BaseException("用户插入失败: " + e.getMessage());
+            }
+        }
+
         log.info("批量导入完成，成功: {} 条", successCount);
         return successCount;
     }

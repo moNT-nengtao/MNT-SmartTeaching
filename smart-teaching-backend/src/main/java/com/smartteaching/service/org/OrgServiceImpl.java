@@ -1,11 +1,16 @@
 package com.smartteaching.service.org;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.smartteaching.common.dto.OrgDTO;
+import com.smartteaching.common.dto.OrgExcelDTO;
 import com.smartteaching.common.exception.BaseException;
+import com.smartteaching.common.utils.OrgExcelUtil;
 import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
@@ -16,10 +21,12 @@ import com.smartteaching.entity.org.Major;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.mapper.OrgMapper;
 import com.smartteaching.mapper.UserMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +35,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class OrgServiceImpl implements OrgService {
 
     @Autowired
@@ -289,7 +297,7 @@ public class OrgServiceImpl implements OrgService {
         if (ids == null) {
             throw new BaseException("未选择学生");
         }
-
+        //转换格式
         List<String> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(StringUtils::hasText)
@@ -304,6 +312,93 @@ public class OrgServiceImpl implements OrgService {
                 .set(User::getStatus, 0);
         userMapper.update(wrapper);
     }
+
+    /**
+     * 组织批量导入
+     *
+     * @param file
+     * @return
+     */
+    @Override
+    public Map<String, Object> batchImportOrg(MultipartFile file) {
+        return null;
+    }
+//        List<User> validUsers = new ArrayList<>();
+//        List<String> errorList = new ArrayList<>();
+//
+//        int collegeCount = 0;
+//        int majorCount = 0;
+//        int classCount = 0;
+//
+//        try{
+//            EasyExcel.read(file.getInputStream(), OrgExcelDTO.class, new ReadListener<OrgExcelDTO>() {
+//                private int rowNum = 1;
+//                @Override
+//                public void invoke(OrgExcelDTO data, AnalysisContext context) {
+//                    rowNum++;
+//                    List<String> errors = OrgExcelUtil.validateOrg(
+//                            data.getType(),
+//                            data.getName(),
+//                            data.getCode(),
+//                            data.getParentId(),
+//                            data.getGradeYear()
+//                            );
+//                    if(!errors.isEmpty()) {
+//                        errorList.add(OrgExcelUtil.formatError(rowNum,data.getName(),errors));
+//                        return;
+//                    }
+//                    //效验父节点
+//                    List<String> parentErrors = validateParentExists(data);
+//                    if(!errors.isEmpty()) {
+//                        errorList.add(OrgExcelUtil.formatError(rowNum,data.getName(),errors));
+//                        return;
+//                    }
+//                    validDtoList.add(data);
+//                }
+//
+//                @Override
+//                public void doAfterAllAnalysed(AnalysisContext context) {
+//
+//                }
+//            })
+//        }
+//
+//        return null;
+//    }
+
+    /**
+     * 校验父ID是否真实存在数据库
+     * @param data excel行数据
+     * @return 错误集合，空=校验通过
+     */
+    private List<String> validateParentExists(OrgExcelDTO data) {
+        List<String> errors = new ArrayList<>();
+        String type = data.getType();
+        Long parentId = data.getParentId();
+
+        // 学院父级固定0，不用校验
+        if ("college".equals(type)) {
+            return errors;
+        }
+
+        if ("major".equals(type)) {
+            // 专业的parentId 必须存在于 college表
+            Long count = orgMapper.countCollegeById(parentId);
+            if (count == null || count <= 0) {
+                errors.add("父级学院ID【" + parentId + "】数据库不存在");
+            }
+        } else if ("class".equals(type)) {
+            // 班级的parentId 必须存在于 major表
+            Long count = orgMapper.countMajorById(parentId);
+            if (count == null || count <= 0) {
+                errors.add("父级专业ID【" + parentId + "】数据库不存在");
+            }
+        }
+        return errors;
+    }
+
+
+
 }
 
 

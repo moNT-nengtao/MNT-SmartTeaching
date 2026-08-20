@@ -49,4 +49,46 @@
         ORDER BY c.sort ASC
     </select>
 
+
+    <!-- ========== UserExcelValidateUtil ========== -->
+
+    <select id="getCollegeIdByName" resultType="java.lang.Long">
+        SELECT id FROM org_college WHERE name = #{name} AND status = 1
+    </select>
+
+    <select id="getMajorIdByName" resultType="java.lang.Long">
+        SELECT id FROM org_major WHERE name = #{name} AND status = 1
+    </select>
+
+    <select id="getClassIdByName" resultType="java.lang.Long">
+        SELECT id FROM org_class WHERE name = #{name} AND status = 1
+    </select>
+
+    <select id="getCollegesByNames" resultType="com.smartteaching.entity.College">
+        SELECT id, name FROM org_college
+        WHERE status = 1
+        AND name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <select id="getMajorsByNames" resultType="com.smartteaching.entity.Major">
+        SELECT id, name FROM org_major
+        WHERE status = 1
+        AND name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <select id="getClassesByNames" resultType="com.smartteaching.entity.ClassInfo">
+        SELECT id, name FROM org_class
+        WHERE status = 1
+        AND name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
 </mapper>

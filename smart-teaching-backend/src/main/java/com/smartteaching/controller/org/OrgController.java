@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -127,6 +128,8 @@ public class OrgController {
 
     /**
      * 学生移出班级(禁用)
+     * @param body
+     * @return
      */
     @PostMapping("/students/remove")
     public Result removeStudents(@RequestBody Map<String,Object> body){
@@ -143,6 +146,24 @@ public class OrgController {
         log.info("学生移出班级");
         orgService.studentsRemove(ids);
         return Result.success();
+    }
+
+
+    /**
+     * 组织批量导入
+     * @param file
+     * @return
+     */
+    @PostMapping("/batchImport")
+    public Result batchImportOrg(@RequestParam("files") MultipartFile file){
+        if (file == null) {
+            log.warn("批量导入失败:文件为空");
+            return  Result.error("文件不能为空，请选择要上传的 Excel 文件");
+        }
+
+        log.info("组织批量导入:{}", file.getOriginalFilename());
+        Map<String,Object> successCount = orgService.batchImportOrg(file);
+        return Result.success(successCount);
     }
 
 

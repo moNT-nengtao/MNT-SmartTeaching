@@ -5,8 +5,10 @@ import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
 import com.smartteaching.common.vo.OrgTreeVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface OrgService {
 
@@ -63,4 +65,12 @@ public interface OrgService {
      * @param ids
      */
     void studentsRemove(String ids);
+
+    /**
+     * 组织批量导入
+     *
+     * @param file
+     * @return
+     */
+    Map<String, Object> batchImportOrg(MultipartFile file);
 }

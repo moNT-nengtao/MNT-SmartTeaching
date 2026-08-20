@@ -1,5 +1,6 @@
 package com.smartteaching.common.dto;
 
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
@@ -30,13 +31,16 @@ public class UserExcelDTO {
     @ExcelProperty("邮箱")
     private String email;
 
-    //不传name，业务处理太麻烦了,Excel转好了再导进来
-    @ExcelProperty("学院ID")
-    private Long collegeId;
+    @ExcelProperty("学院")
+    private String collegeName;
 
-    @ExcelProperty("专业ID")
-    private Long majorId;
+    @ExcelProperty("专业")
+    private String majorName;
 
-    @ExcelProperty("班级ID")
-    private Long classId;
+    @ExcelProperty("班级")
+    private String className;
+
+    // 记录Excel行号
+    @ExcelIgnore  // 不映射Excel列
+    private Integer rowNum;
 }
