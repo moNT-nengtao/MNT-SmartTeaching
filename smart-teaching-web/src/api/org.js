@@ -76,7 +76,9 @@ export function batchImportOrg(data) {
     url: '/org/batchImport',
     method: 'post',
     data,
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: {
+      'Content-Type': 'multipart/form-data' 
+    }
   })
 }
 

@@ -11,6 +11,7 @@
         </div>
       </div>
 
+
       <el-row :gutter="20">
         <el-col :span="8">
           <div class="tree-panel">
@@ -62,13 +63,13 @@
               <el-table ref="studentTableRef" :data="currentNode.students || []" border stripe @selection-change="handleStudentSelectionChange">
                 <el-table-column type="selection" width="50" />
                 <el-table-column type="index" label="#" width="60" />
-              <el-table-column prop="realName" label="姓名" />
-              <el-table-column prop="username" label="学号" />
-              <el-table-column label="操作" width="130">
-                <template #default="{ row }">
-                  <el-button link type="danger" @click="handleRemoveStudent(row)">移出班级</el-button>
-                </template>
-              </el-table-column>
+                <el-table-column prop="realName" label="姓名" />
+                <el-table-column prop="username" label="学号" />
+                <el-table-column label="操作" width="130">
+                  <template #default="{ row }">
+                    <el-button link type="danger" @click="handleRemoveStudent(row)">移出班级</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </div>
             <el-table v-else :data="detailList" v-loading="loading" border stripe>
@@ -86,6 +87,7 @@
         </el-col>
       </el-row>
     </div>
+
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑组织节点' : '新增组织节点'" width="480px">
@@ -116,11 +118,13 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Plus, Edit, Delete, Upload, Download } from '@element-plus/icons-vue'
-import { getOrgTree, addOrg, updateOrg, deleteOrg, removeStudentsFromClass } from '@/api/org'
+import { getOrgTree, addOrg, updateOrg, deleteOrg, removeStudentsFromClass, batchImportOrg, batchExportOrg } from '@/api/org'
+
 
 const loading = ref(false)
 const treeData = ref([])
@@ -129,11 +133,13 @@ const detailList = ref([])
 const studentTableRef = ref(null)
 const selectedStudents = ref([])
 
+
 // 年级下拉选项：2018‑2030年份
 const yearOptions = ref([])
 for(let i = 2018; i <= 2030; i++){
   yearOptions.value.push(i)
 }
+
 
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -146,6 +152,7 @@ const form = ref({
   gradeYear: null
 })
 
+
 const fetchTree = async () => {
   loading.value = true
   try {
@@ -155,6 +162,7 @@ const fetchTree = async () => {
     loading.value = false
   }
 }
+
 
 const handleNodeClick = (data) => {
   currentNode.value = data
@@ -166,9 +174,11 @@ const handleNodeClick = (data) => {
   }
 }
 
+
 const handleStudentSelectionChange = (selection) => {
   selectedStudents.value = selection
 }
+
 
 const selectAllStudents = async () => {
   await nextTick()
@@ -179,9 +189,11 @@ const selectAllStudents = async () => {
   })
 }
 
+
 const clearStudentSelection = () => {
   studentTableRef.value?.clearSelection()
 }
+
 
 const handleAdd = (type) => {
   isEdit.value = false
@@ -195,6 +207,7 @@ const handleAdd = (type) => {
   }
   dialogVisible.value = true
 }
+
 
 const handleAddChild = () => {
   if (!currentNode.value) return
@@ -211,6 +224,7 @@ const handleAddChild = () => {
   dialogVisible.value = true
 }
 
+
 const handleEdit = () => {
   if (!currentNode.value) return
   isEdit.value = true
@@ -225,6 +239,7 @@ const handleEdit = () => {
   dialogVisible.value = true
 }
 
+
 const handleEditItem = (row) => {
   isEdit.value = true
   form.value = {
@@ -237,6 +252,7 @@ const handleEditItem = (row) => {
   }
   dialogVisible.value = true
 }
+
 
 const submitDialog = async () => {
   if (!form.value.name) {
@@ -258,6 +274,7 @@ const submitDialog = async () => {
   }
 }
 
+
 const handleDelete = () => {
   if (!currentNode.value) return
   ElMessageBox.confirm(`确定删除「${currentNode.value.name}」吗？删除前将校验下级关联。`, '提示', {
@@ -271,6 +288,7 @@ const handleDelete = () => {
   }).catch(() => {})
 }
 
+
 const handleDeleteItem = (row) => {
   ElMessageBox.confirm(`确定删除「${row.name}」吗？`, '提示', { type: 'warning' })
     .then(async () => {
@@ -283,6 +301,7 @@ const handleDeleteItem = (row) => {
     .catch(() => {})
 }
 
+
 // 单个移出学生
 const handleRemoveStudent = (student) => {
   ElMessageBox.confirm(`确定将学生【${student.realName}】移出当前班级？`, '提示', {
@@ -293,6 +312,7 @@ const handleRemoveStudent = (student) => {
     await fetchTree()
   }).catch(()=>{})
 }
+
 
 // 移出已勾选学生：与单个移出共用同一个接口
 const handleRemoveSelectedStudents = () => {
@@ -308,18 +328,48 @@ const handleRemoveSelectedStudents = () => {
   }).catch(()=>{})
 }
 
-const handleImport = () => {
-  ElMessage.info('批量导入功能待实现')
+
+// 批量导入完整实现
+const handleImport = async (file) => {
+  const loadingInstance = ElLoading.service({ text: '正在批量导入...' })
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    await batchImportOrg(formData)
+    ElMessage.success('批量导入完成')
+    await fetchTree()
+  } catch (err) {
+    ElMessage.error('批量导入失败')
+  } finally {
+    loadingInstance.close()
+  }
   return false
 }
-const handleExport = () => {
-  ElMessage.info('批量导出功能待实现')
+
+// 批量导出完整实现
+const handleExport = async () => {
+  try {
+    const blob = await batchExportOrg()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = "组织架构数据.xlsx"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(downloadUrl)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error('导出失败')
+  }
 }
+
 
 onMounted(() => {
   fetchTree()
 })
 </script>
+
 
 <style scoped>
 .tree-panel, .detail-panel {
@@ -328,6 +378,7 @@ onMounted(() => {
   padding: 16px;
   min-height: 500px;
 }
+
 
 .panel-header {
   display: flex;
@@ -338,11 +389,13 @@ onMounted(() => {
   gap:8px;
 }
 
+
 .tree-node {
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 
 .student-toolbar {
   display: flex;
@@ -352,6 +405,7 @@ onMounted(() => {
   color: var(--text-secondary);
   font-size: 13px;
 }
+
 
 .student-actions {
   display: flex;

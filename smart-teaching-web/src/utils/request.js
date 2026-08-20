@@ -25,6 +25,11 @@ service.interceptors.request.use(
 // 响应拦截器：统一错误处理
 service.interceptors.response.use(
   (response) => {
+    // ⭐ 关键：blob 响应直接返回，不解析 JSON
+    if (response.config.responseType === 'blob') {
+      return response.data
+    }
+
     const res = response.data
     // 后端约定：code=1成功，code=0失败，401代表未登录
     if (res.code !== 1) {
