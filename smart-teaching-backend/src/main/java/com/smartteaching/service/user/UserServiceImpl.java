@@ -346,6 +346,7 @@ public class UserServiceImpl implements UserService {
         List<String> errorList = new ArrayList<>();
         List<User> validUsers = new ArrayList<>();
 
+        //效验
         try {
             EasyExcel.read(file.getInputStream(), UserExcelDTO.class, new ReadListener<UserExcelDTO>() {
                 private int rowNum = 1;
@@ -378,12 +379,12 @@ public class UserServiceImpl implements UserService {
             }).sheet().doRead();
 
         } catch (IOException e) {
-            log.error("读取 Excel 文件失败", e);
+            log.error(MessageConstant.EXCEL_READ_IO_FAIL, e);
             throw new RuntimeException("读取 Excel 文件失败: " + e.getMessage());
         }
 
         if (!errorList.isEmpty()) {
-            throw new BaseException(String.format("导入失败，共 %d 条错误：%s",
+            throw new BaseException(String.format(MessageConstant.EXCEL_IMPORT_VALID_ERROR_TPL,
                     errorList.size(), String.join("；", errorList)));
         }
 
@@ -414,7 +415,7 @@ public class UserServiceImpl implements UserService {
 
         // 如果有组织名称错误，全部回滚
         if (!errorList.isEmpty()) {
-            throw new BaseException(String.format("导入失败，共 %d 条错误：%s",
+            throw new BaseException(String.format(MessageConstant.EXCEL_IMPORT_VALID_ERROR_TPL,
                     errorList.size(), String.join("；", errorList)));
         }
 

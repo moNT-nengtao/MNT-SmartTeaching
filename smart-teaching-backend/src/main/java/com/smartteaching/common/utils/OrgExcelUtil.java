@@ -1,141 +1,169 @@
 package com.smartteaching.common.utils;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.smartteaching.common.dto.OrgExcelDTO;
-import com.smartteaching.entity.org.College;
-import com.smartteaching.entity.org.Major;
-import com.smartteaching.entity.org.ClassInfo;
-import org.springframework.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.util.*;
 
 /**
- * 组织架构 Excel 导入校验工具类
+ * 组织 Excel 导入工具类
+ *
+ * 功能：
+ * 1. readExcelData        - 读取Excel文件
+ * 2. validateOrgData      - 校验单行数据(name、code、affiliationName、gradeYear)
+ * 3. classifyByType       - 按类型分类+文件内重复检查
  */
+@Slf4j
 public class OrgExcelUtil {
 
-    private static final Pattern CODE_PATTERN = Pattern.compile("^[A-Za-z0-9_-]*$");
-    private static final Pattern NAME_PATTERN = Pattern.compile("^[\\u4e00-\\u9fa5a-zA-Z0-9_\\-\\s]+$");
+    private static final String TYPE_COLLEGE = "college";
+    private static final String TYPE_MAJOR = "major";
+    private static final String TYPE_CLASS = "class";
 
     /**
-     * 校验 Excel 导入的组织数据
+     * 读取 Excel 文件
      */
-    public static List<String> validateOrg(String type, String name, String code,
-                                           Long parentId, Integer gradeYear) {
+    public static List<OrgExcelDTO> readExcelData(MultipartFile file) {
+        try {
+            List<OrgExcelDTO> dataList = new ArrayList<>();
+            EasyExcel.read(file.getInputStream(), OrgExcelDTO.class, new ReadListener<OrgExcelDTO>() {
+                @Override
+                public void invoke(OrgExcelDTO data, AnalysisContext context) {
+                    dataList.add(data);
+                }
+
+                @Override
+                public void doAfterAllAnalysed(AnalysisContext context) {
+                    log.info("Excel 读取完成，共 {} 条数据", dataList.size());
+                }
+            }).sheet().doRead();
+            return dataList;
+        } catch (IOException e) {
+            log.error("读取 Excel 文件失败", e);
+            throw new RuntimeException("读取 Excel 文件失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 校验单行数据
+     */
+    public static List<String> validateOrgData(OrgExcelDTO data, int rowNum) {
         List<String> errors = new ArrayList<>();
 
-        // 1. 类型校验
-        if (!"college".equals(type) && !"major".equals(type) && !"class".equals(type)) {
-            errors.add("类型必须为 college/major/class");
-            return errors;
-        }
-
-        // 2. 名称校验
-        if (!StringUtils.hasText(name)) {
-            errors.add("名称不能为空");
+        String type = data.getType();
+        if (type == null || type.trim().isEmpty()) {
+            errors.add("第 " + rowNum + " 行：类型不能为空");
         } else {
-            if (name.length() < 1 || name.length() > 50) {
-                errors.add("名称长度1-50字符");
-            }
-            if (!NAME_PATTERN.matcher(name).matches()) {
-                errors.add("名称包含非法字符");
+            String lowerType = type.trim().toLowerCase();
+            if (!TYPE_COLLEGE.equals(lowerType) && !TYPE_MAJOR.equals(lowerType) && !TYPE_CLASS.equals(lowerType)) {
+                errors.add("第 " + rowNum + " 行：类型错误，只能为 college/major/class");
             }
         }
 
-        // 3. 编码校验（选填）
-        if (StringUtils.hasText(code)) {
-            if (code.length() > 30) {
-                errors.add("编码长度不能超过30字符");
-            }
-            if (!CODE_PATTERN.matcher(code).matches()) {
-                errors.add("编码仅字母数字下划线中划线");
+        String name = data.getName();
+        if (name == null || name.trim().isEmpty()) {
+            errors.add("第 " + rowNum + " 行：名称不能为空");
+        }
+
+        String code = data.getCode();
+        if (code != null && !code.trim().isEmpty() && code.length() > 64) {
+            errors.add("第 " + rowNum + " 行：编码长度不能超过64位");
+        }
+
+        String typeLower = type != null ? type.trim().toLowerCase() : "";
+        String affiliation = data.getAffiliationName();
+        if (TYPE_MAJOR.equals(typeLower) || TYPE_CLASS.equals(typeLower)) {
+            if (affiliation == null || affiliation.trim().isEmpty()) {
+                String typeName = TYPE_MAJOR.equals(typeLower) ? "专业" : "班级";
+                errors.add("第 " + rowNum + " 行：" + typeName + " 的所属不能为空");
             }
         }
 
-        // 4. 父级ID校验
-        if ("college".equals(type)) {
-            if (parentId == null || parentId != 0) {
-                errors.add("学院的父级ID必须为0");
-            }
-        } else if ("major".equals(type)) {
-            if (parentId == null || parentId <= 0) {
-                errors.add("专业必须关联学院，父级ID（学院ID）必须大于0");
-            }
-        } else if ("class".equals(type)) {
-            if (parentId == null || parentId <= 0) {
-                errors.add("班级必须关联专业，父级ID（专业ID）必须大于0");
-            }
-            if (gradeYear == null) {
-                errors.add("年级不能为空");
-            } else if (gradeYear < 2000 || gradeYear > 2099) {
-                errors.add("年级格式错误，请输入4位年份（如2026）");
-            }
+        if (TYPE_CLASS.equals(typeLower) && data.getGradeYear() == null) {
+            errors.add("第 " + rowNum + " 行：班级的年级不能为空");
         }
 
         return errors;
     }
 
     /**
-     * 格式化错误信息
+     * 按类型分类，并检查文件内重复
      */
-    public static String formatError(int rowNum, String name, List<String> errors) {
-        String displayName = StringUtils.hasText(name) ? name : "空名称";
-        return String.format("第 %d 行 (%s) 错误: %s", rowNum, displayName, String.join("；", errors));
-    }
+    public static ClassifyResult classifyByType(List<OrgExcelDTO> dataList) {
+        ClassifyResult result = new ClassifyResult();
 
-    /**
-     * 构建 College 对象
-     */
-    public static College buildCollege(OrgExcelDTO data) {
-        College college = new College();
-        college.setName(data.getName());
-        college.setCode(data.getCode());
-        college.setParentId(0L);
-        college.setSort(0);
-        college.setStatus(1);
-        return college;
-    }
+        Map<String, List<Integer>> collegeRowMap = new HashMap<>();
+        Map<String, List<Integer>> majorRowMap = new HashMap<>();
+        Map<String, List<Integer>> classRowMap = new HashMap<>();
 
-    /**
-     * 构建 Major 对象
-     */
-    public static Major buildMajor(OrgExcelDTO data) {
-        Major major = new Major();
-        major.setName(data.getName());
-        major.setCode(data.getCode());
-        major.setCollegeId(data.getParentId());
-        major.setSort(0);
-        major.setStatus(1);
-        return major;
-    }
+        for (int i = 0; i < dataList.size(); i++) {
+            OrgExcelDTO data = dataList.get(i);
+            int rowNum = i + 2;
+            String type = data.getType() != null ? data.getType().trim().toLowerCase() : "";
+            String name = data.getName() != null ? data.getName().trim() : "";
 
-    /**
-     * 构建 ClassInfo 对象
-     */
-    public static ClassInfo buildClassInfo(OrgExcelDTO data) {
-        ClassInfo classInfo = new ClassInfo();
-        classInfo.setName(data.getName());
-        classInfo.setCode(data.getCode());
-        classInfo.setMajorId(data.getParentId());
-        classInfo.setGradeYear(data.getGradeYear());
-        classInfo.setSort(0);
-        classInfo.setStatus(1);
-        return classInfo;
-    }
+            if (name.isEmpty()) continue;
 
-    /**
-     * 根据类型构建对应的实体对象
-     */
-    public static Object buildOrgEntity(OrgExcelDTO data) {
-        String type = data.getType();
-        if ("college".equals(type)) {
-            return buildCollege(data);
-        } else if ("major".equals(type)) {
-            return buildMajor(data);
-        } else if ("class".equals(type)) {
-            return buildClassInfo(data);
+            switch (type) {
+                case TYPE_COLLEGE:
+                    result.colleges.add(data);
+                    collegeRowMap.computeIfAbsent(name, k -> new ArrayList<>()).add(rowNum);
+                    break;
+                case TYPE_MAJOR:
+                    result.majors.add(data);
+                    majorRowMap.computeIfAbsent(name, k -> new ArrayList<>()).add(rowNum);
+                    break;
+                case TYPE_CLASS:
+                    result.classes.add(data);
+                    classRowMap.computeIfAbsent(name, k -> new ArrayList<>()).add(rowNum);
+                    break;
+                default:
+                    break;
+            }
         }
-        return null;
+
+        // 检查重复
+        for (Map.Entry<String, List<Integer>> entry : collegeRowMap.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                result.duplicateErrors.add("学院 \"" + entry.getKey() + "\" 重复，行号：" + entry.getValue());
+            }
+        }
+        for (Map.Entry<String, List<Integer>> entry : majorRowMap.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                result.duplicateErrors.add("专业 \"" + entry.getKey() + "\" 重复，行号：" + entry.getValue());
+            }
+        }
+        for (Map.Entry<String, List<Integer>> entry : classRowMap.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                result.duplicateErrors.add("班级 \"" + entry.getKey() + "\" 重复，行号：" + entry.getValue());
+            }
+        }
+
+        log.info("分类完成：学院 {} 条，专业 {} 条，班级 {} 条，重复错误 {} 条",
+                result.colleges.size(), result.majors.size(), result.classes.size(), result.duplicateErrors.size());
+
+        return result;
+    }
+
+    // ==================== 内部类 ====================
+
+    public static class ClassifyResult {
+        public List<OrgExcelDTO> colleges = new ArrayList<>();
+        public List<OrgExcelDTO> majors = new ArrayList<>();
+        public List<OrgExcelDTO> classes = new ArrayList<>();
+        public List<String> duplicateErrors = new ArrayList<>();
+
+        public boolean isEmpty() {
+            return colleges.isEmpty() && majors.isEmpty() && classes.isEmpty();
+        }
+
+        public boolean hasDuplicateErrors() {
+            return !duplicateErrors.isEmpty();
+        }
     }
 }

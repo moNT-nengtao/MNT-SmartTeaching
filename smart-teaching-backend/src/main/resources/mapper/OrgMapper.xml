@@ -63,8 +63,8 @@
     <select id="getClassIdByName" resultType="java.lang.Long">
         SELECT id FROM org_class WHERE name = #{name} AND status = 1
     </select>
-
-    <select id="getCollegesByNames" resultType="com.smartteaching.entity.College">
+    <!-- 批量查询 -->
+    <select id="getCollegesByNames" resultType="com.smartteaching.entity.org.College">
         SELECT id, name FROM org_college
         WHERE status = 1
         AND name IN
@@ -73,7 +73,7 @@
         </foreach>
     </select>
 
-    <select id="getMajorsByNames" resultType="com.smartteaching.entity.Major">
+    <select id="getMajorsByNames" resultType="com.smartteaching.entity.org.Major">
         SELECT id, name FROM org_major
         WHERE status = 1
         AND name IN
@@ -82,7 +82,7 @@
         </foreach>
     </select>
 
-    <select id="getClassesByNames" resultType="com.smartteaching.entity.ClassInfo">
+    <select id="getClassesByNames" resultType="com.smartteaching.entity.org.ClassInfo">
         SELECT id, name FROM org_class
         WHERE status = 1
         AND name IN
@@ -90,5 +90,31 @@
             #{name}
         </foreach>
     </select>
+
+
+    <!-- 批量插入 -->
+    <insert id="batchInsertColleges" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO org_college (name, code, sort, status, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.name}, #{item.code}, #{item.sort}, 1, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertMajors" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO org_major (college_id, name, code, sort, status, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.collegeId}, #{item.name}, #{item.code}, #{item.sort}, 1, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertClasses" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO org_class (major_id, name, code, grade_year, sort, status, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.majorId}, #{item.name}, #{item.code}, #{item.gradeYear}, #{item.sort}, 1, NOW(), NOW())
+        </foreach>
+    </insert>
 
 </mapper>

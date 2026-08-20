@@ -37,16 +37,15 @@ public interface OrgMapper {
      * @param college
      */
     @Insert("insert into smart_teaching.org_college(name,code,parent_id,status,sort,create_time,update_time)\n" +
-            "values(#{name},#{code},#{parentId},0,0,now(),now())")
+            "values(#{name},#{code},#{parentId},1,#{sort},now(),now())")
     Integer saveCollege(College college);
-
 
     /**
      * 新增组织节点-专业
      * @param major
      */
     @Insert("insert into smart_teaching.org_major(name,code,college_id,status,sort,create_time,update_time)\n" +
-            "values(#{name},#{code},#{collegeId},0,0,now(),now())")
+            "values(#{name},#{code},#{collegeId},1,#{sort},now(),now())")
     Integer saveMajor(Major major);
 
     /**
@@ -54,7 +53,7 @@ public interface OrgMapper {
      * @param classInfo
      */
     @Insert("insert into smart_teaching.org_class(name,code,major_id,grade_year,status,sort,create_time,update_time)\n" +
-            "values(#{name},#{code},#{majorId},#{gradeYear},0,0,now(),now())")
+            "values(#{name},#{code},#{majorId},#{gradeYear},1,#{sort},now(),now())")
     Integer saveClass(ClassInfo classInfo);
 
     /**
@@ -62,7 +61,7 @@ public interface OrgMapper {
      * @param college
      * @return
      */
-    @Update("update smart_teaching.org_college set name = #{name}, code = #{code}, parent_id = #{parentId} where id = #{id}")
+    @Update("update smart_teaching.org_college set name = #{name}, code = #{code}, parent_id = #{parentId}, sort = #{sort}, status = #{status}, update_time = now() where id = #{id}")
     int updateCollege(College college);
 
     /**
@@ -70,7 +69,7 @@ public interface OrgMapper {
      * @param major
      * @return
      */
-    @Update("update smart_teaching.org_major set name = #{name} ,code = #{code} where id = #{id}")
+    @Update("update smart_teaching.org_major set name = #{name}, code = #{code}, college_id = #{collegeId}, sort = #{sort}, status = #{status}, update_time = now() where id = #{id}")
     int updateMajor(Major major);
 
     /**
@@ -78,7 +77,7 @@ public interface OrgMapper {
      * @param classInfo
      * @return
      */
-    @Update("UPDATE smart_teaching.org_class SET name = #{name}, code = #{code}, grade_year = #{gradeYear} WHERE id = #{id}")
+    @Update("update smart_teaching.org_class set name = #{name}, code = #{code}, major_id = #{majorId}, grade_year = #{gradeYear}, sort = #{sort}, status = #{status}, update_time = now() where id = #{id}")
     int updateClass(ClassInfo classInfo);
 
     /**
@@ -142,6 +141,41 @@ public interface OrgMapper {
     @Select("SELECT COUNT(1) FROM org_major WHERE id = #{id}")
     Long countMajorById(@Param("id") Long id);
 
+    /**
+     * 根据ID查询学院（含已删除）
+     */
+    @Select("SELECT * FROM org_college WHERE id = #{id}")
+    College getCollegeById(@Param("id") Long id);
+
+    /**
+     * 根据ID查询专业（含已删除）
+     */
+    @Select("SELECT * FROM org_major WHERE id = #{id}")
+    Major getMajorById(@Param("id") Long id);
+
+    /**
+     * 根据ID查询班级（含已删除）
+     */
+    @Select("SELECT * FROM org_class WHERE id = #{id}")
+    ClassInfo getClassById(@Param("id") Long id);
+
+    /**
+     * 根据名称查询学院（含已删除）
+     */
+    @Select("SELECT * FROM org_college WHERE name = #{name}")
+    College getCollegeByNameAllStatus(@Param("name") String name);
+
+    /**
+     * 根据名称查询专业（含已删除）
+     */
+    @Select("SELECT * FROM org_major WHERE name = #{name}")
+    Major getMajorByNameAllStatus(@Param("name") String name);
+
+    /**
+     * 根据名称查询班级（含已删除）
+     */
+    @Select("SELECT * FROM org_class WHERE name = #{name}")
+    ClassInfo getClassByNameAllStatus(@Param("name") String name);
 
     //========UserExcelValidateUtil 调用=========
     /**
@@ -160,18 +194,18 @@ public interface OrgMapper {
     Long getClassIdByName(@Param("name") String name);
 
     /**
-     * 批量查询学院（根据名称列表）
+     * 批量查询（根据名称列表）
      */
     List<College> getCollegesByNames(@Param("names") List<String> names);
-
-    /**
-     * 批量查询专业（根据名称列表）
-     */
     List<Major> getMajorsByNames(@Param("names") List<String> names);
-
-    /**
-     * 批量查询班级（根据名称列表）
-     */
     List<ClassInfo> getClassesByNames(@Param("names") List<String> names);
 
+    /**
+     * 批量插入
+     * @param newColleges
+     * @return
+     */
+    int batchInsertColleges(List<College> newColleges);
+    int batchInsertMajors(List<Major> newMajors);
+    int batchInsertClasses(List<ClassInfo> newClasses);
 }

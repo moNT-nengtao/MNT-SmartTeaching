@@ -26,4 +26,6 @@ public class OrgDTO {
     private String code;
 
     private Integer gradeYear;
+
+    private Integer sort;
 }

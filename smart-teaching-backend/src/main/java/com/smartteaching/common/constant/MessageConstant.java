@@ -32,14 +32,28 @@ public class MessageConstant {
     public static final String OPERATE_USER_NOT_EXIST = "操作用户已不存在";
 
 
-    // ========== Excel批量导入用户 常量【新增】 ==========
-    /** 读取Excel文件失败 */
+    // ========== Excel批量导入用户  ==========
     public static final String EXCEL_READ_IO_FAIL = "读取 Excel 文件失败";
-    /** Excel导入存在校验错误模板 */
     public static final String EXCEL_IMPORT_VALID_ERROR_TPL = "导入失败，共 %d 条错误：%s";
-    /** 账号已存在导入失败 */
-    public static final String EXCEL_IMPORT_ACCOUNT_EXIST = "账号 %s 已存在，导入失败";
-    /** 通用导入失败 */
-    public static final String EXCEL_IMPORT_COMMON_FAIL = "导入失败: %s";
+    public static final String EXCEL_FILE_EMPTY = "Excel 文件为空或没有有效数据";
+    public static final String NO_VALID_DATA_IMPORT = "没有有效数据可导入";
 
+    // ========== 组织节点 ==========
+    public static final String COLLEGE_HAS_MAJOR = "该学院下存在专业，禁止删除，请先删除下属专业";
+    public static final String MAJOR_HAS_CLASS = "该专业下存在班级，禁止删除，请先删除下属班级";
+    public static final String CLASS_HAS_STUDENT = "该班级下存在学生，禁止删除，请先移除该班级下的学生";
+    public static final String ORG_TYPE_ILLEGAL = "非法节点类型 ";
+    public static final String ADD_ORG_NODE_FAIL = "新增组织节点失败";
+    public static final String EDIT_ORG_NODE_FAIL = "编辑组织节点失败";
+
+    public static final String ORG_NODE_NOT_EXIST = "该组织节点不存在";
+    public static final String CLASS_GRADE_YEAR_NOT_NULL = "班级年级不能为空";
+    public static final String CLASS_NOT_EXIST = "班级不存在";
+    public static final String COLLEGE_NOT_EXIST_OR_DISABLED = "所属学院不存在或已禁用";
+    public static final String MAJOR_NOT_EXIST = "专业不存在";
+    public static final String COLLEGE_NOT_EXIST = "学院不存在";
+    public static final String REVERT_CLASS_FAIL = "恢复班级失败";
+    public static final String MAJOR_NOT_EXIST_OR_DISABLED = "所属专业不存在或已禁用";
+    public static final String REVERT_MAJOR_FAIL = "恢复专业失败";
+    public static final String REVERT_COLLEGE_FAIL = "恢复学院失败";
 }

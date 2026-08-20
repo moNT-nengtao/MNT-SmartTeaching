@@ -1,6 +1,7 @@
 package com.smartteaching.service.org;
 
 import com.smartteaching.common.dto.OrgDTO;
+import com.smartteaching.common.dto.OrgExportDTO;
 import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
@@ -72,5 +73,12 @@ public interface OrgService {
      * @param file
      * @return
      */
-    Map<String, Object> batchImportOrg(MultipartFile file);
+    Map<String, Long> batchImportOrg(MultipartFile file);
+
+    /**
+     * 组织批量导出
+     *
+     * @return
+     */
+    List<OrgExportDTO> exportOrg();
 }
