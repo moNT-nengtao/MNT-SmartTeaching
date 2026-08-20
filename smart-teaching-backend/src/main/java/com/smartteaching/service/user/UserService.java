@@ -1,10 +1,8 @@
 package com.smartteaching.service.user;
 
-import com.smartteaching.common.dto.UserAddDTO;
+import com.smartteaching.common.dto.UserSaveDTO;
 import com.smartteaching.common.dto.UserQueryDTO;
 import com.smartteaching.common.result.PageResult;
-import com.smartteaching.entity.user.User;
-import jakarta.validation.Valid;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
@@ -19,11 +17,40 @@ public interface UserService {
     /**
      * 新增用户
      *
-     * @param userAddDTO
+     * @param userSaveDTO
      * @param avatarFile
      * @return
      */
-    void addUser(UserAddDTO userAddDTO, MultipartFile avatarFile);
+    void addUser(UserSaveDTO userSaveDTO, MultipartFile avatarFile);
 
 
+    /**
+     * 编辑用户
+     *
+     * @param userSaveDTO
+     * @param avatarFile
+     */
+    void updateUser(UserSaveDTO userSaveDTO, MultipartFile avatarFile);
+
+    /**
+     * 删除用户
+     *
+     * @param id
+     * @param loginUserId
+     */
+    void deleteUser(String id, Long loginUserId);
+
+    /**
+     * 启用/禁用用户
+     * @param id
+     * @param loginUserId
+     */
+    void statusUser(String id, Long loginUserId);
+
+    /**
+     * 批量导入用户
+     * @param file
+     * @return
+     */
+    int batchImportUsers(MultipartFile file);
 }

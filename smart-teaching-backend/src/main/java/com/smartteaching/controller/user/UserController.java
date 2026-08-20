@@ -1,17 +1,16 @@
 package com.smartteaching.controller.user;
 
-import com.smartteaching.common.dto.UserAddDTO;
+import com.smartteaching.common.dto.UserSaveDTO;
 import com.smartteaching.common.dto.UserQueryDTO;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
 import com.smartteaching.common.vo.UserQueryVO;
-import com.smartteaching.entity.user.User;
 import com.smartteaching.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,26 +42,90 @@ public class UserController {
 
     /**
      * 新增用户
-     * @param userAddDTO
-     * @param authHeader
+     * @param userSaveDTO
      * @param httpRequest
      * @return
      */
+    //普通字段塞进 FormData，头像文件单独 append `avatarFile`
     @PostMapping
-    public Result save(@Valid UserAddDTO userAddDTO,
+    public Result save(@Validated(UserSaveDTO.AddGroup.class) UserSaveDTO userSaveDTO,
                        @RequestPart(required = false) MultipartFile avatarFile,
-                       @RequestHeader(value = "Authorization", required = true) String authHeader,
                        HttpServletRequest httpRequest){
 
-        log.info("新增用户：{}", userAddDTO);
+        log.info("新增用户：{}", userSaveDTO);
 
-        jwtUtil.extractAndValidateToken(authHeader);
-
-        userService.addUser(userAddDTO, avatarFile);
+        userService.addUser(userSaveDTO, avatarFile);
 
         return Result.success("新增用户成功");
     }
 
+
+    /**
+     * 编辑用户
+     * @param userSaveDTO
+     * @return
+     */
+    @PutMapping
+    public Result updateUser(@Validated(UserSaveDTO.UpdateGroup.class) UserSaveDTO userSaveDTO,
+                             @RequestPart(required = false) MultipartFile avatarFile,
+                             HttpServletRequest httpRequest){
+
+        log.info("编辑用户:{}",userSaveDTO);
+
+        userService.updateUser(userSaveDTO,avatarFile);
+
+        return Result.success();
+    }
+
+
+    /**
+     * 删除用户
+     * @return
+     */
+    @DeleteMapping("/{id}")
+    public Result deleteUser(@PathVariable String id,
+                         @RequestHeader(value = "Authorization", required = true) String authHeader){
+        log.info("删除用户:{}",id);
+
+        jwtUtil.extractAndValidateToken(authHeader);
+        Long loginUserId = jwtUtil.getUserIdFromHeader(authHeader);
+
+        userService.deleteUser(id,loginUserId);
+
+        return Result.success();
+    }
+
+    /**
+     * 启用/禁用用户
+     */
+    @PutMapping("/{id}/status")
+    public Result statusUser(@PathVariable String id,
+                             @RequestHeader(value = "Authorization", required = true) String authHeader){
+        log.info("启用/禁用用户:{}",id);
+
+        jwtUtil.extractAndValidateToken(authHeader);
+        Long loginUserId = jwtUtil.getUserIdFromHeader(authHeader);
+
+        userService.statusUser(id,loginUserId);
+
+        return Result.success();
+    }
+
+
+    /**
+     * 批量导入用户
+     * @param file
+     * @return
+     */
+    @PostMapping("/batchImport")
+    public Result batchImportUser(@RequestParam("file") MultipartFile file){
+
+        log.info("批量导入用户，文件名: {}", file.getOriginalFilename());
+
+        int successCount = userService.batchImportUsers(file);
+        return Result.success("批量导入成功，共导入 " + successCount + " 条数据");
+
+    }
 
 
 

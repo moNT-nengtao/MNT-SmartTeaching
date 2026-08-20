@@ -17,7 +17,7 @@
 
     <!-- 专业查询 -->
     <select id="selectMajorList" resultType="com.smartteaching.entity.org.Major">
-        SELECT id,college_id,name,code,parent_id,sort,status,create_time,update_time
+        SELECT id,college_id,name,code,sort,status,create_time,update_time
         FROM org_major
         <where>
             <if test="collegeId != null">
@@ -30,19 +30,23 @@
         ORDER BY sort ASC
     </select>
 
-    <!-- 班级查询 -->
+    <!-- 班级查询,统计人数 -->
     <select id="selectClassList" resultType="com.smartteaching.entity.org.ClassInfo">
-        SELECT id,major_id,name,code,parent_id,sort,status,grade_year,create_time,update_time
-        FROM org_class
+        SELECT
+        c.id,c.major_id,c.name,c.code,c.sort,c.status,c.grade_year,c.create_time,c.update_time,
+        COUNT(u.id) AS studentCount
+        FROM org_class c
+        LEFT JOIN sys_user u ON c.id = u.class_id AND u.role = 'student' AND u.status = 1
         <where>
             <if test="majorId != null">
-                major_id = #{majorId}
+                c.major_id = #{majorId}
             </if>
             <if test="status != null">
-                status = #{status}
+                c.status = #{status}
             </if>
         </where>
-        ORDER BY sort ASC
+        GROUP BY c.id
+        ORDER BY c.sort ASC
     </select>
 
 </mapper>

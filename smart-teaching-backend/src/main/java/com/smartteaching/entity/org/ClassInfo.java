@@ -19,11 +19,11 @@ public class ClassInfo extends BaseEntity {
 
     private String code;
 
-    private Long parentId;
-
     private Integer sort;
 
     private Integer status;
 
     private Integer gradeYear;
+
+    private Integer studentCount;
 }

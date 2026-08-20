@@ -19,8 +19,6 @@ public class Major extends BaseEntity {
 
     private String code;
 
-    private Long parentId;
-
     private Integer sort;
 
     private Integer status;

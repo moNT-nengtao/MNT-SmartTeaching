@@ -87,12 +87,5 @@ public class MybatisPlusConfig {
             // this.strictUpdateFill(metaObject, "updateBy", Long.class, getCurrentUserId());
         }
 
-        /**
-         * 获取当前登录用户ID，从Security上下文拿
-         */
-        // private Long getCurrentUserId() {
-        //     // TODO
-        //     return null;
-        // }
     }
 }

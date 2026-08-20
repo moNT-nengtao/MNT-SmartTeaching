@@ -1,8 +1,10 @@
 package com.smartteaching.service.org;
 
+import com.smartteaching.common.dto.OrgDTO;
 import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
+import com.smartteaching.common.vo.OrgTreeVO;
 
 import java.util.List;
 
@@ -29,4 +31,36 @@ public interface OrgService {
      * @return
      */
     List<OrgClassVO> getOrgClassList(Long majorId, boolean isSelect);
+
+    /**
+     * 组织树
+     * @return
+     */
+    List<OrgTreeVO> bulidOrgTree();
+
+    /**
+     * 新增组织节点
+     * @param orgDTO
+     */
+    void save(OrgDTO orgDTO);
+
+    /**
+     * 编辑组织节点
+     * @param orgDTO
+     */
+    void update(OrgDTO orgDTO);
+
+    /**
+     * 删除组织节点
+     *
+     * @param id
+     * @param type
+     */
+    void delete(Long id, String type);
+
+    /**
+     * 学生移出班级
+     * @param ids
+     */
+    void studentsRemove(String ids);
 }

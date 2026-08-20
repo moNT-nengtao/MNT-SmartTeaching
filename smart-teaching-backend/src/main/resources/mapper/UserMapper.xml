@@ -14,17 +14,21 @@
         <result column="email" property="email"/>
         <result column="college_id" property="collegeId"/>
         <result column="class_id" property="classId"/>
+        <result column="major_id" property="majorId"/>
         <result column="collegeName" property="collegeName"/>
         <result column="className" property="className"/>
+        <result column="majorName" property="majorName"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <!--人员管理页面-->
     <select id="selectUserPage" resultMap="UserQueryVOMap">
         SELECT
         u.id,
         u.username,
         u.real_name,
+        u.gender,
         u.role,
         u.status,
         u.phone,
@@ -33,11 +37,13 @@
         u.class_id,
         oc.name AS collegeName,
         ocl.name AS className,
+        om.name AS majorName,
         u.create_time,
         u.update_time
         FROM `sys_user` u
         LEFT JOIN org_college oc ON u.college_id = oc.id
         LEFT JOIN org_class ocl ON u.class_id = ocl.id
+        LEFT JOIN org_major om ON u.major_id = om.id
         <where>
             <if test="dto.keyword != null and dto.keyword.trim() != ''">
                 (u.username LIKE CONCAT('%', #{dto.keyword}, '%') OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%'))

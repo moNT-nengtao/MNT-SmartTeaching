@@ -19,33 +19,27 @@ import java.util.regex.Pattern;
 public class GlobalExceptionHandler {
 
     /**
-     * 捕获业务异常
-     *
-     * @param ex
-     * @return
+     * 捕获自定义业务异常 BaseException
      */
-    @ExceptionHandler
+    @ExceptionHandler(BaseException.class)
     public Result<String> baseExceptionHandler(BaseException ex) {
         log.error("异常信息：{}", ex.getMessage());
-        ex.printStackTrace(); //输出到控制台
+        ex.printStackTrace();
         return Result.error(ex.getMessage());
     }
 
     /**
-     * 全局默认异常处理
-     *
-     * @param ex
-     * @return
+     * 捕获运行时业务异常（比如直接throw new RuntimeException("xxx")）
      */
-    @ExceptionHandler
-    public Result<String> exceptionHandler(Exception ex) {
-        log.error("异常信息：{}", ex.getMessage());
-        ex.printStackTrace(); //输出到控制台
-        return Result.error(MessageConstant.UNKNOWN_ERROR);
+    @ExceptionHandler(RuntimeException.class)
+    public Result<String> runtimeExceptionHandler(RuntimeException ex) {
+        log.error("异常信息：{}", ex.getMessage(), ex);
+        ex.printStackTrace();
+        return Result.error(ex.getMessage());
     }
 
     /**
-     *处理新增员工时重复的sql异常
+     * 唯一约束重复
      */
     @ExceptionHandler(DuplicateKeyException.class)
     public Result handleDuplicateKeyException(DuplicateKeyException ex) {
@@ -60,10 +54,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
-    public Result exceptionHandler(SQLIntegrityConstraintViolationException ex){
+    public Result sqlExceptionHandler(SQLIntegrityConstraintViolationException ex){
+        log.error("SQL约束异常",ex);
         return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
 
+    /**
+     * 全局兜底，所有其它未知异常
+     */
+    @ExceptionHandler(Exception.class)
+    public Result<String> exceptionHandler(Exception ex) {
+        log.error("系统未知异常：", ex);
+        ex.printStackTrace();
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
+    }
 
 }
-
