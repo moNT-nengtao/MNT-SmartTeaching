@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.smartteaching.common.constant.MessageConstant;
 import com.smartteaching.common.dto.OrgDTO;
 import com.smartteaching.common.dto.OrgExcelDTO;
-import com.smartteaching.common.dto.OrgExportDTO;
+import com.smartteaching.common.vo.OrgExportVO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.utils.OrgExcelUtil;
 import com.smartteaching.common.vo.OrgClassVO;
@@ -606,42 +606,42 @@ public class OrgServiceImpl implements OrgService {
      * @return
      */
     @Override
-    public List<OrgExportDTO> exportOrg() {
-        List<OrgExportDTO> exportList = new ArrayList<>();
+    public List<OrgExportVO> exportOrg() {
+        List<OrgExportVO> exportList = new ArrayList<>();
 
         //学院
         List<College> collegeList = orgMapper.selectCollegeList(null);
         for (College college : collegeList) {
-            OrgExportDTO orgExportDTO = new OrgExportDTO();
-            orgExportDTO.setType("学院");
-            orgExportDTO.setName(college.getName().trim());
-            orgExportDTO.setCode(college.getCode());
-            exportList.add(orgExportDTO);
+            OrgExportVO orgExportVO = new OrgExportVO();
+            orgExportVO.setType("学院");
+            orgExportVO.setName(college.getName().trim());
+            orgExportVO.setCode(college.getCode());
+            exportList.add(orgExportVO);
         }
 
         //专业
         List<Major> majorList = orgMapper.selectMajorList(null, null);
         for (Major major : majorList) {
             College college = orgMapper.getCollegeById(major.getCollegeId());
-            OrgExportDTO orgExportDTO = new OrgExportDTO();
-            orgExportDTO.setType("专业");
-            orgExportDTO.setName(major.getName().trim());
-            orgExportDTO.setCode(major.getCode());
-            orgExportDTO.setAffiliationName(college != null ? college.getName() : "");
-            exportList.add(orgExportDTO);
+            OrgExportVO orgExportVO = new OrgExportVO();
+            orgExportVO.setType("专业");
+            orgExportVO.setName(major.getName().trim());
+            orgExportVO.setCode(major.getCode());
+            orgExportVO.setAffiliationName(college != null ? college.getName() : "");
+            exportList.add(orgExportVO);
         }
 
         //班级
         List<ClassInfo> classInfoList = orgMapper.selectClassList(null, null);
         for (ClassInfo classInfo : classInfoList) {
             Major major = orgMapper.getMajorById(classInfo.getMajorId());
-            OrgExportDTO orgExportDTO = new OrgExportDTO();
-            orgExportDTO.setType("班级");
-            orgExportDTO.setName(classInfo.getName().trim());
-            orgExportDTO.setCode(classInfo.getCode());
-            orgExportDTO.setAffiliationName(major != null ? major.getName() : "");
-            orgExportDTO.setGradeYear(classInfo.getGradeYear());
-            exportList.add(orgExportDTO);
+            OrgExportVO orgExportVO = new OrgExportVO();
+            orgExportVO.setType("班级");
+            orgExportVO.setName(classInfo.getName().trim());
+            orgExportVO.setCode(classInfo.getCode());
+            orgExportVO.setAffiliationName(major != null ? major.getName() : "");
+            orgExportVO.setGradeYear(classInfo.getGradeYear());
+            exportList.add(orgExportVO);
         }
 
         log.info("导出组织数据完成，共 {} 条", exportList.size());

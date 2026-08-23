@@ -1,7 +1,7 @@
 package com.smartteaching.service.org;
 
 import com.smartteaching.common.dto.OrgDTO;
-import com.smartteaching.common.dto.OrgExportDTO;
+import com.smartteaching.common.vo.OrgExportVO;
 import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
@@ -80,5 +80,5 @@ public interface OrgService {
      *
      * @return
      */
-    List<OrgExportDTO> exportOrg();
+    List<OrgExportVO> exportOrg();
 }

@@ -18,11 +18,11 @@ export function getMajorList(collegeId) {
 }
 
 // 班级列表（按专业）
-export function getClassList(majorId) {
+export function getClassList(majorId, isSelect = false) {
   return request({
     url: '/org/class/list',
     method: 'get',
-    params: { majorId }
+    params: { majorId, isSelect }
   })
 }
 

@@ -2,16 +2,13 @@ package com.smartteaching.controller.org;
 
 import com.alibaba.excel.EasyExcel;
 import com.smartteaching.common.dto.OrgDTO;
-import com.smartteaching.common.dto.OrgExcelDTO;
-import com.smartteaching.common.dto.OrgExportDTO;
-import com.smartteaching.common.exception.BaseException;
+import com.smartteaching.common.vo.OrgExportVO;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
 import com.smartteaching.common.vo.OrgClassVO;
 import com.smartteaching.common.vo.OrgCollegeListVO;
 import com.smartteaching.common.vo.OrgMajorVO;
 import com.smartteaching.common.vo.OrgTreeVO;
-import com.smartteaching.entity.org.College;
 import com.smartteaching.service.org.OrgService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -183,7 +180,7 @@ public class OrgController {
     @GetMapping("/batchExport")
     public void exportOrg(HttpServletResponse response){
         try {
-            List<OrgExportDTO> exportDTOList = orgService.exportOrg();
+            List<OrgExportVO> exportVOList = orgService.exportOrg();
 
             response.reset();
 
@@ -194,14 +191,14 @@ public class OrgController {
                     .replaceAll("\\+", "%20");
             response.setHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName);
             try (java.io.OutputStream out = response.getOutputStream()) {
-            EasyExcel.write(response.getOutputStream(),OrgExportDTO.class)
+            EasyExcel.write(response.getOutputStream(), OrgExportVO.class)
                     .sheet("组织架构")
-                    .doWrite(exportDTOList);
+                    .doWrite(exportVOList);
                 out.flush();
             }
 
             response.getOutputStream().flush();
-            log.info("组织数据导出成功，共 {} 条", exportDTOList.size());
+            log.info("组织数据导出成功，共 {} 条", exportVOList.size());
         } catch (Exception e) {
             log.error("导出失败", e);
             try {

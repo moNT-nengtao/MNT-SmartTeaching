@@ -95,5 +95,8 @@ export function exportSchedule(params) {
     method: 'get',
     params,
     responseType: 'blob'
+  }).then(res => {
+    // 返回完整响应，包含 headers 和 data
+    return res
   })
 }

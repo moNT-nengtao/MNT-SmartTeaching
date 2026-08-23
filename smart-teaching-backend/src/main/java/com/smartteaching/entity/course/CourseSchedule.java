@@ -19,7 +19,7 @@ public class CourseSchedule extends BaseEntity {
 
     private Long classId;
 
-    private Integer week;
+    private String week;
 
     private Integer day;
 

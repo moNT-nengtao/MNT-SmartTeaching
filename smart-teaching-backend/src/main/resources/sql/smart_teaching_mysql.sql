@@ -94,12 +94,14 @@ CREATE TABLE course (
                         INDEX idx_semester (semester)
 ) COMMENT='课程表';
 
+-- ✅ 修改点：week 由 INT 改为 JSON，存储周次数组 [1,2,3,4,9,10,11,12]
+-- ⚠️ JSON类型不能参与UNIQUE KEY，因此删除原 uk_schedule 唯一约束；其余索引全部原样保留
 CREATE TABLE course_schedule (
                                  id BIGINT PRIMARY KEY AUTO_INCREMENT,
                                  course_id BIGINT NOT NULL,
                                  teacher_id BIGINT NOT NULL,
                                  class_id BIGINT NOT NULL,
-                                 week INT NOT NULL COMMENT '周次',
+                                 week JSON NOT NULL COMMENT '周次数组，例：[1,2,3,4,9,10,11,12]',
                                  day INT NOT NULL COMMENT '星期1‑7',
                                  lesson INT NOT NULL COMMENT '第几节课',
                                  room VARCHAR(64) DEFAULT NULL COMMENT '教室',
@@ -107,7 +109,6 @@ CREATE TABLE course_schedule (
                                  status TINYINT NOT NULL DEFAULT 1 COMMENT '1=正常,0=删除',
                                  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                  update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                 UNIQUE KEY uk_schedule (course_id, week, day, lesson, room),
                                  INDEX idx_teacher_id (teacher_id),
                                  INDEX idx_class_id (class_id),
                                  INDEX idx_course_id (course_id)
@@ -321,135 +322,114 @@ CREATE TABLE dashboard_stat (
 -- =====================================================
 -- 初始化基础数据
 -- =====================================================
-INSERT INTO sys_role(id, code, name, description)
-VALUES
-    (1, 'admin', '管理员', '平台管理员'),
-    (2, 'teacher', '教师', '任课教师'),
-    (3, 'student', '学生', '学生用户');
+INSERT INTO sys_role(id, code, name, description) VALUES
+                                                      (1, 'admin', '管理员', '平台管理员'),
+                                                      (2, 'teacher', '教师', '任课教师'),
+                                                      (3, 'student', '学生', '学生用户');
 
-INSERT INTO org_college(name,code,parent_id,sort,status)
-VALUES
-    ('计算机科学与技术学院','CS01',0,1,1),
-    ('外国语学院','FL01',0,2,1),
-    ('经济管理学院','EM01',0,3,1);
+INSERT INTO org_college(name,code,parent_id,sort,status) VALUES
+                                                             ('计算机科学与技术学院','CS01',0,1,1),
+                                                             ('外国语学院','FL01',0,2,1),
+                                                             ('经济管理学院','EM01',0,3,1);
 
-INSERT INTO org_major(college_id,name,code,sort,status)
-VALUES
-    (1,'计算机科学与技术','CS-2023',1,1),
-    (1,'软件工程','SE-2023',2,1),
-    (2,'英语','ENG-2023',1,1),
-    (3,'工商管理','MBA-2023',1,1);
+INSERT INTO org_major(college_id,name,code,sort,status) VALUES
+                                                            (1,'计算机科学与技术','CS-2023',1,1),
+                                                            (1,'软件工程','SE-2023',2,1),
+                                                            (2,'英语','ENG-2023',1,1),
+                                                            (3,'工商管理','MBA-2023',1,1);
 
-INSERT INTO org_class(major_id,name,code,sort,status,grade_year)
-VALUES
-    (1,'计科2301班','CS2301',1,1,2023),
-    (1,'计科2302班','CS2302',2,1,2023),
-    (2,'软工2301班','SE2301',1,1,2023),
-    (3,'英语2301班','ENG2301',1,1,2023);
+INSERT INTO org_class(major_id,name,code,sort,status,grade_year) VALUES
+                                                                     (1,'计科2301班','CS2301',1,1,2023),
+                                                                     (1,'计科2302班','CS2302',2,1,2023),
+                                                                     (2,'软工2301班','SE2301',1,1,2023),
+                                                                     (3,'英语2301班','ENG2301',1,1,2023);
 
-INSERT INTO sys_user(username,password,real_name,gender,email,phone,avatar,role,status,class_id,college_id,major_id,last_login_time)
-VALUES
-    ('admin','e10adc3949ba59abbe56e057f20f883e','系统管理员',1,'admin@smart.edu','13800000001','/avatar/default.png','admin',1,NULL,NULL,NULL,'2026-08-18 09:20:10'),
-    ('t001','e10adc3949ba59abbe56e057f20f883e','张教授',1,'zhang@smart.edu','13800000002','/avatar/t001.png','teacher',1,NULL,1,1,'2026-08-18 16:30:22'),
-    ('t002','e10adc3949ba59abbe56e057f20f883e','李老师',2,'li@smart.edu','13800000003','/avatar/t002.png','teacher',1,NULL,1,2,'2026-08-18 14:10:05'),
-    ('s230101','e10adc3949ba59abbe56e057f20f883e','莫能涛',1,'s230101@smart.edu','13800000004','/avatar/s230101.png','student',1,1,1,1,'2026-08-18 15:45:33'),
-    ('s230102','e10adc3949ba59abbe56e057f20f883e','王浩',1,'s230102@smart.edu','13800000005','/avatar/s230102.png','student',1,1,1,1,'2026-08-18 11:20:11'),
-    ('s230201','e10adc3949ba59abbe56e057f20f883e','刘思琪',2,'s230201@smart.edu','13800000006','/avatar/s230201.png','student',1,2,1,1,'2026-08-18 10:05:44');
+INSERT INTO sys_user(username,password,real_name,gender,email,phone,avatar,role,status,class_id,college_id,major_id,last_login_time) VALUES
+                                                                                                                                         ('admin','e10adc3949ba59abbe56e057f20f883e','系统管理员',1,'admin@smart.edu','13800000001','/avatar/default.png','admin',1,NULL,NULL,NULL,'2026-08-18 09:20:10'),
+                                                                                                                                         ('t001','e10adc3949ba59abbe56e057f20f883e','张教授',1,'zhang@smart.edu','13800000002','/avatar/t001.png','teacher',1,NULL,1,1,'2026-08-18 16:30:22'),
+                                                                                                                                         ('t002','e10adc3949ba59abbe56e057f20f883e','李老师',2,'li@smart.edu','13800000003','/avatar/t002.png','teacher',1,NULL,1,2,'2026-08-18 14:10:05'),
+                                                                                                                                         ('s230101','e10adc3949ba59abbe56e057f20f883e','莫能涛',1,'s230101@smart.edu','13800000004','/avatar/s230101.png','student',1,1,1,1,'2026-08-18 15:45:33'),
+                                                                                                                                         ('s230102','e10adc3949ba59abbe56e057f20f883e','王浩',1,'s230102@smart.edu','13800000005','/avatar/s230102.png','student',1,1,1,1,'2026-08-18 11:20:11'),
+                                                                                                                                         ('s230201','e10adc3949ba59abbe56e057f20f883e','刘思琪',2,'s230201@smart.edu','13800000006','/avatar/s230201.png','student',1,2,1,1,'2026-08-18 10:05:44');
 
-INSERT INTO course(code,name,teacher_id,credit,semester,capacity,description,status)
-VALUES
-    ('CS23001','Java程序设计',2,4.00,'2025-2026-2',60,'Java面向对象、SpringBoot基础开发课程',1),
-    ('CS23002','数据结构与算法',3,3.50,'2025-2026-2',55,'线性表、树、图、排序查找算法',1),
-    ('CS23003','计算机网络',2,3.00,'2025-2026-2',50,'TCP/IP、HTTP协议、网络分层原理',1);
+INSERT INTO course(code,name,teacher_id,credit,semester,capacity,description,status) VALUES
+                                                                                         ('CS23001','Java程序设计',2,4.00,'2025-2026-2',60,'Java面向对象、SpringBoot基础开发课程',1),
+                                                                                         ('CS23002','数据结构与算法',3,3.50,'2025-2026-2',55,'线性表、树、图、排序查找算法',1),
+                                                                                         ('CS23003','计算机网络',2,3.00,'2025-2026-2',50,'TCP/IP、HTTP协议、网络分层原理',1);
 
-INSERT INTO course_schedule(course_id,teacher_id,class_id,week,day,lesson,room,color,status)
-VALUES
-    (1,2,1,3,1,2,'A102','#409EFF',1),
-    (1,2,1,3,3,4,'A102','#409EFF',1),
-    (2,3,1,3,2,1,'B303','#67C23A',1),
-    (3,2,2,3,4,3,'C205','#E6A23C',1);
+-- ✅ 初始化数据：week字段改为JSON数组，原单周3改为 [3]
+INSERT INTO course_schedule(course_id,teacher_id,class_id,week,day,lesson,room,color,status) VALUES
+                                                                                                 (1,2,1,'[3,4,5,6]',1,2,'A102','#409EFF',1),
+                                                                                                 (1,2,1,'[3,4,5,6]',3,4,'A102','#409EFF',1),
+                                                                                                 (2,3,1,'[3,4,5,6]',2,1,'B303','#67C23A',1),
+                                                                                                 (3,2,2,'[3,4,5,6,7]',4,3,'C205','#E6A23C',1);
 
-INSERT INTO selection_config(start_time,end_time,min_credit,max_credit,allowed_majors,status)
-VALUES('2026-08-01 08:00:00','2026-08-20 23:59:59',2.00,10.00,'[1,2]',1);
+INSERT INTO selection_config(start_time,end_time,min_credit,max_credit,allowed_majors,status) VALUES('2026-08-01 08:00:00','2026-08-20 23:59:59',2.00,10.00,'[1,2]',1);
 
-INSERT INTO selection_record(student_id,course_id,selected_time,status)
-VALUES
-    (4,1,'2026-08-02 10:12:33',1),
-    (4,2,'2026-08-02 10:14:11',1),
-    (5,1,'2026-08-02 11:05:22',1),
-    (5,3,'2026-08-02 11:08:45',1),
-    (6,2,'2026-08-03 09:33:10',1);
+INSERT INTO selection_record(student_id,course_id,selected_time,status) VALUES
+                                                                            (4,1,'2026-08-02 10:12:33',1),
+                                                                            (4,2,'2026-08-02 10:14:11',1),
+                                                                            (5,1,'2026-08-02 11:05:22',1),
+                                                                            (5,3,'2026-08-02 11:08:45',1),
+                                                                            (6,2,'2026-08-03 09:33:10',1);
 
-INSERT INTO student_score(course_id,student_id,teacher_id,score,usual_score,final_score,remark,status)
-VALUES
-    (1,4,2,82.50,85.00,80.00,'平时出勤良好',1),
-    (2,4,3,76.00,74.00,78.00,'',1),
-    (1,5,2,88.00,90.00,86.00,'表现优秀',1),
-    (3,5,2,79.50,77.00,82.00,'',1),
-    (2,6,3,68.00,65.00,71.00,'需要加强练习',1);
+INSERT INTO student_score(course_id,student_id,teacher_id,score,usual_score,final_score,remark,status) VALUES
+                                                                                                           (1,4,2,82.50,85.00,80.00,'平时出勤良好',1),
+                                                                                                           (2,4,3,76.00,74.00,78.00,'',1),
+                                                                                                           (1,5,2,88.00,90.00,86.00,'表现优秀',1),
+                                                                                                           (3,5,2,79.50,77.00,82.00,'',1),
+                                                                                                           (2,6,3,68.00,65.00,71.00,'需要加强练习',1);
 
-INSERT INTO attendance_session(course_id,teacher_id,class_id,session_date,start_time,end_time,check_code,status)
-VALUES
-    (1,2,1,'2026-08-12','08:00:00','09:40:00','8A72K9',0),
-    (2,3,1,'2026-08-13','10:00:00','11:40:00','B3D5Q7',0);
+INSERT INTO attendance_session(course_id,teacher_id,class_id,session_date,start_time,end_time,check_code,status) VALUES
+                                                                                                                     (1,2,1,'2026-08-12','08:00:00','09:40:00','8A72K9',0),
+                                                                                                                     (2,3,1,'2026-08-13','10:00:00','11:40:00','B3D5Q7',0);
 
-INSERT INTO attendance_record(session_id,student_id,longitude,latitude,checkin_time,status)
-VALUES
-    (1,4,113.392340,23.129100,'2026-08-12 08:04:22',1),
-    (1,5,113.392360,23.129120,'2026-08-12 08:06:10',1),
-    (2,4,113.392345,23.129110,'2026-08-13 10:02:33',1),
-    (2,6,113.392355,23.129115,'2026-08-13 10:03:41',1);
+INSERT INTO attendance_record(session_id,student_id,longitude,latitude,checkin_time,status) VALUES
+                                                                                                (1,4,113.392340,23.129100,'2026-08-12 08:04:22',1),
+                                                                                                (1,5,113.392360,23.129120,'2026-08-12 08:06:10',1),
+                                                                                                (2,4,113.392345,23.129110,'2026-08-13 10:02:33',1),
+                                                                                                (2,6,113.392355,23.129115,'2026-08-13 10:03:41',1);
 
-INSERT INTO notice(title,content,publisher_id,is_top,status)
-VALUES
-    ('2026秋季选课通知','各位同学：2026秋季学期选课已经开放，请在规定时间内完成选课操作。',1,1,1),
-    ('期末考试安排','本学期期末考试时间已发布，请留意课程通知，做好复习。',1,0,1);
+INSERT INTO notice(title,content,publisher_id,is_top,status) VALUES
+                                                                 ('2026秋季选课通知','各位同学：2026秋季学期选课已经开放，请在规定时间内完成选课操作。',1,1,1),
+                                                                 ('期末考试安排','本学期期末考试时间已发布，请留意课程通知，做好复习。',1,0,1);
 
-INSERT INTO notice_read_record(notice_id,user_id,read_time)
-VALUES
-    (1,4,'2026-08-02 14:22:10'),
-    (1,5,'2026-08-02 15:10:33'),
-    (1,6,'2026-08-03 08:44:21'),
-    (2,4,'2026-08-05 09:11:02');
+INSERT INTO notice_read_record(notice_id,user_id,read_time) VALUES
+                                                                (1,4,'2026-08-02 14:22:10'),
+                                                                (1,5,'2026-08-02 15:10:33'),
+                                                                (1,6,'2026-08-03 08:44:21'),
+                                                                (2,4,'2026-08-05 09:11:02');
 
-INSERT INTO qa_question(user_id,title,content,tags,is_top,like_count,reply_count,status)
-VALUES
-    (4,'SpringBoot启动报错怎么排查','我的SpringBoot项目启动报404，接口访问不到，该怎么定位？','SpringBoot,后端,bug',0,12,2,1),
-    (5,'数据结构快速排序实现思路','求讲解快排的原理与Java代码示例','算法,Java',0,7,1,1);
+INSERT INTO qa_question(user_id,title,content,tags,is_top,like_count,reply_count,status) VALUES
+                                                                                             (4,'SpringBoot启动报错怎么排查','我的SpringBoot项目启动报404，接口访问不到，该怎么定位？','SpringBoot,后端,bug',0,12,2,1),
+                                                                                             (5,'数据结构快速排序实现思路','求讲解快排的原理与Java代码示例','算法,Java',0,7,1,1);
 
-INSERT INTO qa_reply(question_id,user_id,content,like_count,status)
-VALUES
-    (1,2,'优先检查接口路径、@RestController、组件扫描包路径，查看控制台有无报错。',8,1),
-    (1,3,'确认yml配置上下文路径是否修改，测试用postman直接访问接口。',4,1),
-    (2,2,'快排核心：选基准值，分区，递归处理左右子数组。',5,1);
+INSERT INTO qa_reply(question_id,user_id,content,like_count,status) VALUES
+                                                                        (1,2,'优先检查接口路径、@RestController、组件扫描包路径，查看控制台有无报错。',8,1),
+                                                                        (1,3,'确认yml配置上下文路径是否修改，测试用postman直接访问接口。',4,1),
+                                                                        (2,2,'快排核心：选基准值，分区，递归处理左右子数组。',5,1);
 
-INSERT INTO ai_session(user_id,title,model_name)
-VALUES
-    (4,'Java学习问答会话','gpt-4o-mini'),
-    (5,'算法问题咨询','gpt-4o-mini');
+INSERT INTO ai_session(user_id,title,model_name) VALUES
+                                                     (4,'Java学习问答会话','gpt-4o-mini'),
+                                                     (5,'算法问题咨询','gpt-4o-mini');
 
-INSERT INTO ai_message(session_id,sender,content)
-VALUES
-    (1,0,'帮我写一个SpringBoot全局异常处理示例'),
-    (1,1,'下面给你一份@RestControllerAdvice全局异常处理器完整代码……'),
-    (2,0,'讲解二叉树的层序遍历'),
-    (2,1,'二叉树层序遍历借助队列实现，一层一层输出节点……');
+INSERT INTO ai_message(session_id,sender,content) VALUES
+                                                      (1,0,'帮我写一个SpringBoot全局异常处理示例'),
+                                                      (1,1,'下面给你一份@RestControllerAdvice全局异常处理器完整代码……'),
+                                                      (2,0,'讲解二叉树的层序遍历'),
+                                                      (2,1,'二叉树层序遍历借助队列实现，一层一层输出节点……');
 
-INSERT INTO course_evaluation(course_id,teacher_id,student_id,score,content)
-VALUES
-    (1,2,4,4.75,'课程讲解清晰，案例丰富，收获很大。'),
-    (2,3,4,4.20,'算法课难度偏高，希望多一点实操演示。'),
-    (1,2,5,4.80,'老师讲课节奏很好，作业布置合理。');
+INSERT INTO course_evaluation(course_id,teacher_id,student_id,score,content) VALUES
+                                                                                 (1,2,4,4.75,'课程讲解清晰，案例丰富，收获很大。'),
+                                                                                 (2,3,4,4.20,'算法课难度偏高，希望多一点实操演示。'),
+                                                                                 (1,2,5,4.80,'老师讲课节奏很好，作业布置合理。');
 
-INSERT INTO warning_record(user_id,warning_type,level,title,content,status)
-VALUES
+INSERT INTO warning_record(user_id,warning_type,level,title,content,status) VALUES
     (6,'score',2,'成绩预警','部分课程分数偏低，建议加强课后练习，及时向老师请教。',1);
 
-INSERT INTO dashboard_stat(stat_type,target_date,target_id,value)
-VALUES
-    ('user_count','2026-08-18',NULL,'{"admin":1,"teacher":2,"student":3}'),
-    ('course_count','2026-08-18',NULL,'{"total":3,"open":3}');
-
+INSERT INTO dashboard_stat(stat_type,target_date,target_id,value) VALUES
+                                                                      ('user_count','2026-08-18',NULL,'{"admin":1,"teacher":2,"student":3}'),
+                                                                      ('course_count','2026-08-18',NULL,'{"total":3,"open":3}');
 
 -- =====================================================
 -- Redis 建议说明（不放在 MySQL 中）

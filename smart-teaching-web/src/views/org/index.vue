@@ -347,9 +347,17 @@ const handleImport = async (file) => {
 }
 
 // 批量导出完整实现
+// 批量导出完整实现
 const handleExport = async () => {
   try {
     const blob = await batchExportOrg()
+    // 判断blob是不是后端返回的错误JSON
+    if (blob.type === 'application/json') {
+      const text = await blob.text()
+      const json = JSON.parse(text)
+      ElMessage.error(json.msg || '导出失败')
+      return
+    }
     const downloadUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = downloadUrl
@@ -363,6 +371,7 @@ const handleExport = async () => {
     ElMessage.error('导出失败')
   }
 }
+
 
 
 onMounted(() => {

@@ -4,4 +4,107 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.CourseMapper">
 
+    <!--课程列表-->
+    <select id="selectCoursePage" resultType="com.smartteaching.common.vo.CourseQueryVO">
+        SELECT
+        c.id, c.code, c.name, c.teacher_id,
+        t.real_name AS teacherName,
+        c.credit, c.semester, c.capacity,
+        c.description, c.status,
+        c.create_time, c.update_time
+        FROM course c
+        LEFT JOIN sys_user t ON c.teacher_id = t.id AND t.role = 'teacher'
+        <where>
+            <if test="courseQueryDTO.keyword != null and courseQueryDTO.keyword != ''">
+                AND (c.name LIKE CONCAT('%', #{courseQueryDTO.keyword}, '%')
+                OR c.code LIKE CONCAT('%', #{courseQueryDTO.keyword}, '%'))
+            </if>
+            <if test="courseQueryDTO.code != null and courseQueryDTO.code != ''">
+                AND c.code = #{courseQueryDTO.code}
+            </if>
+            <if test="courseQueryDTO.teacherId != null">
+                AND c.teacher_id = #{courseQueryDTO.teacherId}
+            </if>
+            <if test="courseQueryDTO.semester != null and courseQueryDTO.semester != ''">
+                AND c.semester = #{courseQueryDTO.semester}
+            </if>
+            <if test="courseQueryDTO.status != null">
+                AND c.status = #{courseQueryDTO.status}
+            </if>
+        </where>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <!--排课列表-->
+    <select id="selectSchedulePage" resultType="com.smartteaching.common.vo.ScheduleQueryVO">
+        SELECT cs.id,cs.course_id,c.name AS courseName,cs.teacher_id,t.real_name AS teacherName,cs.class_id,oc.name AS className,
+        cs.week,cs.day,cs.lesson,cs.room,cs.color,cs.status,cs.create_time,cs.update_time
+        FROM course_schedule cs
+        LEFT JOIN sys_user t ON cs.teacher_id = t.id AND t.role = "teacher"
+        LEFT JOIN course c ON cs.course_id = c.id
+        LEFT JOIN org_class oc ON cs.class_id = oc.id
+        <where>
+            <if test="scheduleQueryDTO.courseName != null and scheduleQueryDTO.courseName != ''">
+                AND c.name LIKE CONCAT('%',#{scheduleQueryDTO.courseName},'%')
+            </if>
+        </where>
+        ORDER BY cs.class_id DESC
+    </select>
+
+    <!-- 排课冲突查询 -->
+    <select id="selectConflictSchedules" resultType="com.smartteaching.entity.course.CourseSchedule">
+        SELECT *
+        FROM course_schedule
+        WHERE day = #{day}
+          AND lesson = #{lesson}
+          AND (teacher_id = #{teacherId}
+            OR class_id = #{classId}
+            OR room = #{room})
+        <if test="id != null">
+            AND id != #{id}
+        </if>
+    </select>
+
+    <!--新增排课-->
+    <insert id="addSchedule" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO course_schedule (
+            course_id, teacher_id, class_id, week, day, lesson, room, color, status, create_time, update_time
+        ) VALUES (
+                     #{courseId}, #{teacherId}, #{classId}, #{week}, #{day}, #{lesson}, #{room}, #{color}, 1, NOW(), NOW()
+                 );
+    </insert>
+
+    <!--编辑排课-->
+    <update id="updateSchedule">
+        UPDATE course_schedule
+        SET course_id = #{courseId},teacher_id = #{teacherId},class_id = #{classId},week = #{week},
+            day = #{day},lesson = #{lesson},room = #{room},color = #{color},update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!--导出课表-->
+    <select id="selectExportList" resultType="com.smartteaching.common.vo.CourseScheduleExportVO">
+        SELECT
+        cs.day,
+        cs.lesson,
+        cs.week AS weekJson,
+        c.name AS courseName,
+        tu.real_name AS teacherName,
+        cl.name AS className,
+        cs.room
+        FROM course_schedule cs
+        LEFT JOIN course c ON cs.course_id = c.id
+        LEFT JOIN sys_user tu ON cs.teacher_id = tu.id
+        LEFT JOIN org_class cl ON cs.class_id = cl.id
+        <where>
+            <if test="courseId != null">
+                cs.course_id = #{courseId}
+            </if>
+        </where>
+        ORDER BY cs.day, cs.lesson
+    </select>
+
+
+
+
 </mapper>
