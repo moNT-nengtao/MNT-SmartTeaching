@@ -51,18 +51,20 @@ export function dropCourse(courseId) {
 }
 
 // 我的已选课程
-export function getMyCourses() {
+export function getMyCourses(params) {
   return request({
     url: '/selection/my',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
 // 课程选课名单
-export function getCourseStudents(courseId) {
+export function getCourseStudents(courseId, params) {
   return request({
     url: `/selection/${courseId}/students`,
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 

@@ -53,7 +53,40 @@ const fetchData = async () => {
   try {
     const res = await getAdminDashboard()
     const data = res.data
-    // TODO: 根据后端返回数据填充图表
+    
+    // 更新统计卡片
+    const cards = data.statCards
+    statCards.value[0].value = cards.classCount
+    statCards.value[1].value = cards.teacherCount
+    statCards.value[2].value = cards.studentCount
+    statCards.value[3].value = cards.courseCount
+    statCards.value[4].value = cards.selectionRate + '%'
+    statCards.value[5].value = cards.attendanceRate + '%'
+    
+    // 更新柱状图（学院学生分布）
+    barOption.value = {
+      xAxis: { data: data.collegeStudentDistribution.categories },
+      yAxis: { name: '人数' },
+      series: data.collegeStudentDistribution.series
+    }
+    
+    // 更新饼图（师生比例）
+    pieOption.value = {
+      series: [{
+        type: 'pie',
+        data: data.teacherStudentRatio.categories.map((name, index) => ({
+          name,
+          value: data.teacherStudentRatio.series[0].data[index]
+        }))
+      }]
+    }
+    
+    // 更新折线图（近7日活跃度）
+    lineOption.value = {
+      xAxis: { data: data.weeklyActivity.categories },
+      yAxis: { name: '活跃人数' },
+      series: data.weeklyActivity.series
+    }
   } catch (e) {
     // 错误已处理
   } finally {

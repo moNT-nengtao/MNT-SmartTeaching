@@ -13,18 +13,35 @@
       <el-table :data="scoreList" v-loading="loading" border stripe>
         <el-table-column prop="courseName" label="课程名称" min-width="150" />
         <el-table-column prop="credit" label="学分" width="80" />
-        <el-table-column prop="usualScore" label="平时成绩" width="100" />
-        <el-table-column prop="finalScore" label="期末成绩" width="100" />
+        <el-table-column prop="usualScore" label="平时成绩" width="100">
+          <template #default="{ row }">
+            {{ row.usualScore !== null && row.usualScore !== undefined ? row.usualScore : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="finalScore" label="期末成绩" width="100">
+          <template #default="{ row }">
+            {{ row.finalScore !== null && row.finalScore !== undefined ? row.finalScore : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="综合成绩" width="120">
           <template #default="{ row }">
-            <el-tag :type="scoreTagType(row.totalScore)">{{ row.totalScore }}</el-tag>
+            <el-tag v-if="hasValidScore(row)" :type="scoreTagType(row.totalScore)">
+              {{ row.totalScore }}
+            </el-tag>
+            <span v-else class="empty-score">-</span>
           </template>
         </el-table-column>
         <el-table-column label="绩点" width="80">
-          <template #default="{ row }">{{ scoreToGpa(row.totalScore).toFixed(1) }}</template>
+          <template #default="{ row }">
+            <span v-if="hasValidScore(row)">{{ scoreToGpa(row.totalScore).toFixed(1) }}</span>
+            <span v-else class="empty-score">-</span>
+          </template>
         </el-table-column>
         <el-table-column label="等级" width="80">
-          <template #default="{ row }">{{ scoreToLevel(row.totalScore) }}</template>
+          <template #default="{ row }">
+            <span v-if="hasValidScore(row)">{{ scoreToLevel(row.totalScore) }}</span>
+            <span v-else class="empty-score">-</span>
+          </template>
         </el-table-column>
         <el-table-column prop="semester" label="学期" width="120" />
       </el-table>
@@ -56,17 +73,43 @@ const searchFields = [
   }
 ]
 
+/**
+ * 判断成绩是否有效（不为null、undefined，且不为空字符串）
+ */
+const hasValidScore = (row) => {
+  const score = row.totalScore
+  return score !== null && score !== undefined && score !== '' && !isNaN(score)
+}
+
+/**
+ * 判断单个成绩是否有效
+ */
+const hasValidSingleScore = (score) => {
+  return score !== null && score !== undefined && score !== '' && !isNaN(score)
+}
+
 const gpa = computed(() => {
-  if (scoreList.value.length === 0) return '0.0'
-  const total = scoreList.value.reduce((sum, s) => sum + scoreToGpa(s.totalScore) * (s.credit || 0), 0)
-  const credits = scoreList.value.reduce((sum, s) => sum + (s.credit || 0), 0)
-  return credits > 0 ? (total / credits).toFixed(2) : '0.0'
+  // 过滤出有有效成绩的记录
+  const validScores = scoreList.value.filter(row => hasValidScore(row))
+  if (validScores.length === 0) return '-'
+  
+  const total = validScores.reduce((sum, s) => {
+    const gpaValue = scoreToGpa(s.totalScore)
+    const credit = s.credit || 0
+    return sum + gpaValue * credit
+  }, 0)
+  
+  const credits = validScores.reduce((sum, s) => sum + (s.credit || 0), 0)
+  return credits > 0 ? (total / credits).toFixed(2) : '-'
 })
 
 const avgScore = computed(() => {
-  if (scoreList.value.length === 0) return '--'
-  const total = scoreList.value.reduce((sum, s) => sum + (s.totalScore || 0), 0)
-  return (total / scoreList.value.length).toFixed(1)
+  // 过滤出有有效成绩的记录
+  const validScores = scoreList.value.filter(row => hasValidScore(row))
+  if (validScores.length === 0) return '-'
+  
+  const total = validScores.reduce((sum, s) => sum + (s.totalScore || 0), 0)
+  return (total / validScores.length).toFixed(1)
 })
 
 const scoreTagType = (score) => {
@@ -91,8 +134,32 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .stats {
   display: flex;
   gap: 10px;
+}
+
+.empty-score {
+  color: #c0c4cc;
+  font-size: 14px;
 }
 </style>

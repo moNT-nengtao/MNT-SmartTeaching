@@ -9,6 +9,15 @@ export function enterScore(data) {
   })
 }
 
+// 导出课程成绩（教师录入用）
+export function exportCourseScore(courseId) {
+  return request({
+    url: `/score/course/${courseId}/export`,
+    method: 'get',
+    responseType: 'blob'
+  })
+}
+
 // 成绩修改
 export function updateScore(data) {
   return request({
@@ -18,7 +27,7 @@ export function updateScore(data) {
   })
 }
 
-// 批量导入成绩
+// 批量导入成绩（弃用）
 export function batchImportScore(data) {
   return request({
     url: '/score/batchImport',
@@ -63,7 +72,7 @@ export function getAbnormalScores(params) {
   })
 }
 
-// 成绩导出
+// 异常成绩导出
 export function exportScore(params) {
   return request({
     url: '/score/export',
