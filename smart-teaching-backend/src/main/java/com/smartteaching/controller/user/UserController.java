@@ -1,11 +1,11 @@
 package com.smartteaching.controller.user;
 
-import com.smartteaching.common.dto.UserSaveDTO;
-import com.smartteaching.common.dto.UserQueryDTO;
+import com.smartteaching.common.dto.user.UserSaveDTO;
+import com.smartteaching.common.dto.user.UserQueryDTO;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
-import com.smartteaching.common.vo.UserQueryVO;
+import com.smartteaching.common.vo.user.UserQueryVO;
 import com.smartteaching.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * @ClassName UserController
+ * @Description 用户管理控制器，提供用户列表、新增、编辑、删除、启用/禁用及批量导入接口
+ * @Author MNT
+ * @Date 2026/8/15 09:52
+ **/
 @Slf4j
 @RestController
 @RequestMapping("/api/user")

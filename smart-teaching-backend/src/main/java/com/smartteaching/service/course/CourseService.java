@@ -1,10 +1,15 @@
 package com.smartteaching.service.course;
 
-import com.smartteaching.common.dto.*;
+import com.smartteaching.common.dto.course.BatchConflictResultDTO;
+import com.smartteaching.common.dto.course.CourseQueryDTO;
+import com.smartteaching.common.dto.course.CourseSaveDTO;
+import com.smartteaching.common.dto.schedule.ScheduleConflictDTO;
+import com.smartteaching.common.dto.schedule.ScheduleQueryDTO;
+import com.smartteaching.common.dto.schedule.ScheduleSaveDTO;
 import com.smartteaching.common.result.PageResult;
-import com.smartteaching.common.vo.CourseQueryVO;
-import com.smartteaching.common.vo.CourseScheduleExportVO;
-import com.smartteaching.common.vo.ScheduleQueryVO;
+import com.smartteaching.common.vo.course.CourseQueryVO;
+import com.smartteaching.common.vo.course.CourseScheduleExportVO;
+import com.smartteaching.common.vo.course.CourseScheduleQueryVO;
 
 import java.util.List;
 
@@ -40,7 +45,7 @@ public interface CourseService {
      * @param scheduleQueryDTO
      * @return
      */
-    PageResult<ScheduleQueryVO> getScheduleList(ScheduleQueryDTO scheduleQueryDTO);
+    PageResult<CourseScheduleQueryVO> getScheduleList(ScheduleQueryDTO scheduleQueryDTO);
 
     /**
      * 新增AND编辑-排课
@@ -58,7 +63,7 @@ public interface CourseService {
      * 排课冲突批量校验（返回每条的冲突信息，不写入数据库）
      * @param scheduleConflictDTOList
      */
-    java.util.List<com.smartteaching.common.dto.BatchConflictResultDTO> conflictScheduleBatch(java.util.List<ScheduleConflictDTO> scheduleConflictDTOList);
+    java.util.List<BatchConflictResultDTO> conflictScheduleBatch(java.util.List<ScheduleConflictDTO> scheduleConflictDTOList);
 
 
     /**

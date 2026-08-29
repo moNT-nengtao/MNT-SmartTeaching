@@ -3,5 +3,252 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.SelectionMapper">
+    <!-- 公共查询字段：avgScore 使用标量子查询，避免笛卡尔积 -->
+    <sql id="baseSelectFields">
+        c.id AS courseId,
+        c.name AS courseName,
+        c.code AS code,
+        u.real_name AS teacherName,
+        c.capacity AS maxStudents,
+        IFNULL(sel.selectedCount, 0) AS selectedCount,
+        c.credit AS credit,
+        c.semester AS semester,
+        (c.capacity - IFNULL(sel.selectedCount, 0)) AS remaining,
+        (SELECT IFNULL(AVG(ce_inner.score), 0) FROM course_evaluation ce_inner WHERE ce_inner.course_id = c.id) AS avgScore
+    </sql>
+
+    <!-- 公共表关联：移除 course_evaluation join，防止多对多笛卡尔积 -->
+    <sql id="baseJoin">
+        FROM course c
+        INNER JOIN sys_user u ON c.teacher_id = u.id
+        LEFT JOIN (
+            SELECT course_id, COUNT(*) AS selectedCount
+            FROM selection_record
+            WHERE status = 1
+            GROUP BY course_id
+        ) sel ON c.id = sel.course_id
+    </sql>
+
+    <!-- 公共基础WHERE：课程启用、容量未满、排除本人已选课程 -->
+    <sql id="baseWhere">
+        WHERE c.status = 1
+          AND c.capacity > IFNULL(sel.selectedCount, 0)
+          AND c.id NOT IN (
+              SELECT course_id FROM selection_record
+              WHERE student_id = #{userId} AND status = 1
+        )
+    </sql>
+
+    <!-- 公共GROUP BY -->
+    <sql id="baseGroupBy">
+        GROUP BY c.id, c.name, c.code, u.real_name, c.capacity, c.credit, c.semester
+    </sql>
+
+
+    <!--选课大厅-->
+    <select id="selectSelectionByCourseName" resultType="com.smartteaching.common.vo.selection.SelectionQueryVO">
+        SELECT
+        c.id AS courseId,
+        c.name AS courseName,
+        c.code AS code,
+        u.real_name AS teacherName,
+        c.capacity AS maxStudents,
+        IFNULL(sel.selectedCount, 0) AS selectedCount,
+        c.credit AS credit,
+        c.semester AS semester,
+        CAST(GROUP_CONCAT(
+        DISTINCT CONCAT(
+        '周', cs.day,
+        ' 第', cs.lesson, '节',
+        CASE WHEN cs.room IS NOT NULL AND cs.room != '' THEN CONCAT(' (', cs.room, ')') ELSE '' END
+        )
+        ORDER BY cs.day, cs.lesson
+        SEPARATOR '；'
+        ) AS CHAR) AS scheduleTime,
+        (c.capacity - IFNULL(sel.selectedCount, 0)) AS remaining,
+        <!-- 新增：根据当前登录学生id判断是否已选 -->
+        (SELECT COUNT(1) FROM selection_record sr
+        WHERE sr.course_id = c.id
+        AND sr.student_id = #{userId}
+        AND sr.status = 1
+        ) > 0 AS isSelected,
+        NULL AS reason,
+        (SELECT AVG(ce_inner.score) FROM course_evaluation ce_inner WHERE ce_inner.course_id = c.id) AS avgScore
+        FROM course c
+        LEFT JOIN sys_user u ON c.teacher_id = u.id
+        LEFT JOIN (
+        SELECT
+        course_id,
+        COUNT(*) AS selectedCount
+        FROM selection_record
+        WHERE status = 1
+        GROUP BY course_id
+        ) sel ON c.id = sel.course_id
+        LEFT JOIN course_schedule cs ON c.id = cs.course_id AND cs.status = 1
+        <where>
+            c.status = 1
+            <if test="dto.keyword != null and dto.keyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{dto.keyword}, '%')
+                OR c.code LIKE CONCAT('%', #{dto.keyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%')
+                )
+            </if>
+        </where>
+        GROUP BY c.id, c.name, c.code, u.real_name, c.capacity, c.credit, c.semester
+        ORDER BY c.id DESC
+    </select>
+
+
+    <!--统计总数-->
+    <select id="countSelectionByCourseName" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT c.id)
+        FROM course c
+        LEFT JOIN sys_user u ON c.teacher_id = u.id
+        <where>
+            c.status = 1
+            <if test="dto.keyword != null and dto.keyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{dto.keyword}, '%')
+                OR c.code LIKE CONCAT('%', #{dto.keyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <!--查看学生名单-->
+    <select id="selectCourseStudents" resultType="com.smartteaching.common.vo.selection.SelectionStudentVO">
+        SELECT
+            su.id          AS studentId,
+            su.username    AS studentNo,
+            su.real_name   AS studentName,
+            oc.grade_year  AS grade,
+            om.name        AS majorName,
+            sr.selected_time AS selectTime
+        FROM selection_record sr
+                 LEFT JOIN sys_user su ON sr.student_id = su.id
+                 LEFT JOIN org_class oc ON su.class_id = oc.id
+                 LEFT JOIN org_major om ON su.major_id = om.id
+        WHERE sr.course_id = #{courseId}
+          AND sr.status = 1
+        ORDER BY sr.selected_time ASC
+    </select>
+
+
+    <!--智能推荐-->
+    <!-- 1.同教师推荐 -->
+    <select id="selectRecommendTeacher" resultType="com.smartteaching.common.vo.selection.SelectionQueryVO">
+        SELECT
+        <include refid="baseSelectFields"/>
+        <include refid="baseJoin"/>
+        <include refid="baseWhere"/>
+        AND c.teacher_id IN (
+        SELECT DISTINCT c2.teacher_id
+        FROM selection_record sr
+        INNER JOIN course c2 ON sr.course_id = c2.id
+        WHERE sr.student_id = #{userId} AND sr.status = 1
+        )
+        <include refid="baseGroupBy"/>
+        ORDER BY avgScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 2.同专业推荐 -->
+    <select id="selectRecommendMajor" resultType="com.smartteaching.common.vo.selection.SelectionQueryVO">
+        SELECT
+        <include refid="baseSelectFields"/>
+        <include refid="baseJoin"/>
+        <include refid="baseWhere"/>
+        AND c.id IN (
+        SELECT DISTINCT sr.course_id
+        FROM selection_record sr
+        INNER JOIN sys_user s ON sr.student_id = s.id
+        WHERE s.major_id = (SELECT major_id FROM sys_user WHERE id = #{userId})
+        AND sr.status = 1
+        AND sr.student_id != #{userId}
+        )
+        <include refid="baseGroupBy"/>
+        ORDER BY IFNULL(sel.selectedCount, 0) DESC, avgScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 3.热门课程推荐 -->
+    <select id="selectRecommendHotCourse" resultType="com.smartteaching.common.vo.selection.SelectionQueryVO">
+        SELECT
+        <include refid="baseSelectFields"/>
+        <include refid="baseJoin"/>
+        <include refid="baseWhere"/>
+        <include refid="baseGroupBy"/>
+        ORDER BY IFNULL(sel.selectedCount, 0) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 4.高分课程推荐 -->
+    <select id="selectRecommendHighCourse" resultType="com.smartteaching.common.vo.selection.SelectionQueryVO">
+        SELECT
+        <include refid="baseSelectFields"/>
+        <include refid="baseJoin"/>
+        <include refid="baseWhere"/>
+        <include refid="baseGroupBy"/>
+        HAVING avgScore >= 4.0
+        ORDER BY avgScore DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 学生选课 -->
+    <insert id="studentSaveCourses" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO selection_record(student_id, course_id, selected_time, status)
+        VALUES (#{studentId}, #{courseId}, NOW(), 1)
+    </insert>
+
+    <!-- 判断是否已经有效选课 -->
+    <select id="hasSelected" resultType="java.lang.Boolean">
+        SELECT COUNT(1) > 0 FROM selection_record
+        WHERE student_id = #{studentId} AND course_id = #{courseId} AND status = 1
+    </select>
+
+    <!-- 物理删除选课记录 -->
+    <delete id="deleteByCourseAndStudent">
+        DELETE FROM selection_record
+        WHERE student_id = #{studentId} AND course_id = #{courseId}
+    </delete>
+
+
+    <!--学生退课-->
+    <update id="studentDeleteCourses">
+        UPDATE selection_record
+        SET status = 0
+        WHERE student_id = #{studentId}
+          AND course_id = #{courseId}
+          AND status = 1
+    </update>
+
+    <!--我的已选课程-->
+    <select id="getSelectionMyCourses" resultType="com.smartteaching.common.vo.selection.SelectionMyCourseVO">
+        SELECT
+            c.id AS courseId,
+            c.code AS code,
+            c.name AS courseName,
+            u.real_name AS teacherName,
+            c.credit AS credit,
+            -- 汇总上课时间以及对应教师：周1 第2节；周3 第4节
+            GROUP_CONCAT(
+                    DISTINCT CONCAT('周', cs.day, ' 第', cs.lesson, '节-', cs.room)
+                    ORDER BY cs.day, cs.lesson
+                    SEPARATOR '；'
+            ) AS scheduleTime,
+            -- 周次
+            CAST(GROUP_CONCAT(DISTINCT cs.week ORDER BY cs.day, cs.lesson SEPARATOR '；') AS CHAR) AS week,
+            sr.id AS selectRecordId
+        FROM selection_record sr
+                 INNER JOIN course c ON sr.course_id = c.id
+                 INNER JOIN sys_user u ON c.teacher_id = u.id
+                 LEFT JOIN course_schedule cs ON c.id = cs.course_id AND cs.status = 1
+        WHERE sr.student_id = #{studentId}
+          AND sr.status = 1
+        GROUP BY c.id, c.code, c.name, u.real_name, c.credit, sr.id
+    </select>
+
 
 </mapper>

@@ -7,7 +7,14 @@ import com.smartteaching.entity.BaseEntity;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+/**
+ * @ClassName Score
+ * @Description 学生成绩实体类，对应student_score表，存储课程成绩及平时分、期末分等明细
+ * @Author MNT
+ * @Date 2026/8/14 14:44
+ **/
 @Data
 @TableName("student_score")
 public class Score extends BaseEntity {
@@ -30,4 +37,8 @@ public class Score extends BaseEntity {
     private String remark;
 
     private Integer status;
+
+    private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
 }

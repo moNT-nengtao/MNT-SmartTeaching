@@ -6,6 +6,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName User
+ * @Description 用户实体类，对应sys_user表，管理用户认证信息及所属组织关系
+ * @Author MNT
+ * @Date 2026/8/14 10:41
+ **/
 @Data
 @TableName("sys_user")
 public class User extends BaseEntity {

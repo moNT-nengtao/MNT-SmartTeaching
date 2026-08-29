@@ -2,12 +2,17 @@ package com.smartteaching.controller.course;
 
 import com.alibaba.excel.EasyExcel;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartteaching.common.dto.*;
+import com.smartteaching.common.dto.course.BatchConflictResultDTO;
+import com.smartteaching.common.dto.course.CourseQueryDTO;
+import com.smartteaching.common.dto.course.CourseSaveDTO;
+import com.smartteaching.common.dto.schedule.ScheduleConflictDTO;
+import com.smartteaching.common.dto.schedule.ScheduleQueryDTO;
+import com.smartteaching.common.dto.schedule.ScheduleSaveDTO;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.result.Result;
-import com.smartteaching.common.vo.CourseQueryVO;
-import com.smartteaching.common.vo.CourseScheduleExportVO;
-import com.smartteaching.common.vo.ScheduleQueryVO;
+import com.smartteaching.common.vo.course.CourseQueryVO;
+import com.smartteaching.common.vo.course.CourseScheduleExportVO;
+import com.smartteaching.common.vo.course.CourseScheduleQueryVO;
 import com.smartteaching.service.course.CourseService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +21,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -93,9 +97,9 @@ public class CourseController {
      * @return
      */
     @GetMapping("/schedule/list")
-    public Result<PageResult<ScheduleQueryVO>> getScheduleList(ScheduleQueryDTO  scheduleQueryDTO) {
+    public Result<PageResult<CourseScheduleQueryVO>> getScheduleList(ScheduleQueryDTO scheduleQueryDTO) {
         log.info("排课列表:{}", scheduleQueryDTO);
-        PageResult<ScheduleQueryVO> pageResult = courseService.getScheduleList(scheduleQueryDTO);
+        PageResult<CourseScheduleQueryVO> pageResult = courseService.getScheduleList(scheduleQueryDTO);
         return Result.success(pageResult);
     }
 
@@ -201,6 +205,14 @@ public class CourseController {
         try {
             //封装查询
             List<CourseScheduleExportVO> data = courseService.exportSchedule(courseId,courseName);
+
+            if(data == null || data.isEmpty()){
+                response.reset();
+                response.setContentType("application/json");
+                response.setCharacterEncoding("utf-8");
+                response.getWriter().write("{\"code\":400,\"msg\":\"暂无导出数据\"}");
+                return;
+            }
 
             //EasyExcel写出
             EasyExcel.write(response.getOutputStream(), CourseScheduleExportVO.class)

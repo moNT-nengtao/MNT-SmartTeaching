@@ -1,16 +1,22 @@
 package com.smartteaching.service.org;
 
-import com.smartteaching.common.dto.OrgDTO;
-import com.smartteaching.common.vo.OrgExportVO;
-import com.smartteaching.common.vo.OrgClassVO;
-import com.smartteaching.common.vo.OrgCollegeListVO;
-import com.smartteaching.common.vo.OrgMajorVO;
-import com.smartteaching.common.vo.OrgTreeVO;
+import com.smartteaching.common.dto.org.OrgDTO;
+import com.smartteaching.common.vo.org.OrgExportVO;
+import com.smartteaching.common.vo.org.OrgClassVO;
+import com.smartteaching.common.vo.org.OrgCollegeListVO;
+import com.smartteaching.common.vo.org.OrgMajorVO;
+import com.smartteaching.common.vo.org.OrgTreeVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @ClassName OrgService
+ * @Description 组织服务接口
+ * @Author MNT
+ * @Date 2026/8/16 09:45
+ **/
 public interface OrgService {
 
     /**
@@ -21,11 +27,11 @@ public interface OrgService {
 
     /**
      * 获取专业列表
+     *
      * @param collegeId 学院id，可为null
-     * @param isSelect
      * @return
      */
-    List<OrgMajorVO> getOrgMajorList(Long collegeId, boolean isSelect);
+    List<OrgMajorVO> getOrgMajorList(Long collegeId);
 
     /**
      * 获取班级列表

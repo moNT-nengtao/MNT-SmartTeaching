@@ -1,14 +1,14 @@
 package com.smartteaching.controller.org;
 
 import com.alibaba.excel.EasyExcel;
-import com.smartteaching.common.dto.OrgDTO;
-import com.smartteaching.common.vo.OrgExportVO;
+import com.smartteaching.common.dto.org.OrgDTO;
+import com.smartteaching.common.vo.org.OrgExportVO;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
-import com.smartteaching.common.vo.OrgClassVO;
-import com.smartteaching.common.vo.OrgCollegeListVO;
-import com.smartteaching.common.vo.OrgMajorVO;
-import com.smartteaching.common.vo.OrgTreeVO;
+import com.smartteaching.common.vo.org.OrgClassVO;
+import com.smartteaching.common.vo.org.OrgCollegeListVO;
+import com.smartteaching.common.vo.org.OrgMajorVO;
+import com.smartteaching.common.vo.org.OrgTreeVO;
 import com.smartteaching.service.org.OrgService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * @ClassName OrgController
+ * @Description 组织管理控制器
+ * @Author MNT
+ * @Date 2026/8/16 09:23
+ **/
 @Slf4j
 @RestController
 @RequestMapping("/api/org")
@@ -55,12 +61,10 @@ public class OrgController {
      */
     //接收学院id才能找对应专业列表
     @GetMapping("/major/list")
-    public Result<List<OrgMajorVO>> getMajorList(@RequestParam(required = false) Long collegeId,
-                                                 @RequestParam(defaultValue = "false") boolean isSelect
-    ){
+    public Result<List<OrgMajorVO>> getMajorList(@RequestParam(required = false) Long collegeId){
         log.info("专业列表，接收学院id:{}", collegeId);
 
-        List<OrgMajorVO> majorList = orgService.getOrgMajorList(collegeId, isSelect);
+        List<OrgMajorVO> majorList = orgService.getOrgMajorList(collegeId);
 
         return Result.success(majorList);
     }

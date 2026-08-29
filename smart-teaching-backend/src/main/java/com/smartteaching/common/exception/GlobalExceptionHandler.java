@@ -12,8 +12,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 全局异常处理器，处理项目中抛出的业务异常
- */
+ * @ClassName GlobalExceptionHandler
+ * @Description 全局异常处理器，处理项目中抛出的业务异常
+ * @Author MNT
+ * @Date 2026/8/14 13:18
+ **/
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {

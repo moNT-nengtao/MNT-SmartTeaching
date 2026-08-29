@@ -8,13 +8,13 @@ import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartteaching.common.constant.MessageConstant;
-import com.smartteaching.common.dto.UserExcelDTO;
-import com.smartteaching.common.dto.UserSaveDTO;
-import com.smartteaching.common.dto.UserQueryDTO;
+import com.smartteaching.common.dto.user.UserExcelDTO;
+import com.smartteaching.common.dto.user.UserSaveDTO;
+import com.smartteaching.common.dto.user.UserQueryDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.utils.UserExcelValidateUtil;
-import com.smartteaching.common.vo.UserQueryVO;
+import com.smartteaching.common.vo.user.UserQueryVO;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.mapper.OrgMapper;
 import com.smartteaching.mapper.UserMapper;
@@ -37,6 +37,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * @ClassName UserServiceImpl
+ * @Description 用户服务实现类
+ * @Author MNT
+ * @Date 2026/8/15 16:24
+ **/
 @Service
 @Slf4j
 public class UserServiceImpl implements UserService {

@@ -9,6 +9,12 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName SelectionConfig
+ * @Description 选课配置实体类，对应selection_config表，管理选课时间窗口及学分范围限制
+ * @Author MNT
+ * @Date 2026/8/14 09:36
+ **/
 @Data
 @TableName("selection_config")
 public class SelectionConfig extends BaseEntity {
@@ -24,7 +30,13 @@ public class SelectionConfig extends BaseEntity {
 
     private BigDecimal maxCredit;
 
-    private String allowedMajors;
+    private String scopeType;
+
+    private String scopeValue;
 
     private Integer status;
+
+    private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
 }

@@ -6,6 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.smartteaching.entity.BaseEntity;
 import lombok.Data;
 
+/**
+ * @ClassName Reply
+ * @Description 问答回复实体类，对应qa_reply表，存储用户对提问的回复内容及互动数据
+ * @Author MNT
+ * @Date 2026/8/14 15:56
+ **/
 @Data
 @TableName("qa_reply")
 public class Reply extends BaseEntity {

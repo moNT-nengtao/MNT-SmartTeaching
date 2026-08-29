@@ -5,13 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.smartteaching.common.dto.*;
+import com.smartteaching.common.constant.MessageConstant;
+import com.smartteaching.common.dto.course.BatchConflictResultDTO;
+import com.smartteaching.common.dto.course.CourseQueryDTO;
+import com.smartteaching.common.dto.course.CourseSaveDTO;
+import com.smartteaching.common.dto.schedule.ScheduleConflictDTO;
+import com.smartteaching.common.dto.schedule.ScheduleQueryDTO;
+import com.smartteaching.common.dto.schedule.ScheduleSaveDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.utils.WeekUtil;
-import com.smartteaching.common.vo.CourseQueryVO;
-import com.smartteaching.common.vo.CourseScheduleExportVO;
-import com.smartteaching.common.vo.ScheduleQueryVO;
+import com.smartteaching.common.vo.course.CourseQueryVO;
+import com.smartteaching.common.vo.course.CourseScheduleExportVO;
+import com.smartteaching.common.vo.course.CourseScheduleQueryVO;
 import com.smartteaching.entity.course.Course;
 import com.smartteaching.entity.course.CourseSchedule;
 import com.smartteaching.mapper.CourseMapper;
@@ -66,7 +72,7 @@ public class CourseServiceImpl implements CourseService {
         wrapper.eq(Course::getCode, courseSaveDTO.getCode());
         Long codeCount = courseMapper.selectCount(wrapper);
         if (codeCount > 0) {
-            throw new BaseException("已经存在编号：" + courseSaveDTO.getCode());
+            throw new BaseException(String.format(MessageConstant.COURSE_CODE_EXISTS, courseSaveDTO.getCode()));
         }
         //插入
         Course course = new Course();
@@ -75,7 +81,6 @@ public class CourseServiceImpl implements CourseService {
         course.setCreateTime(LocalDateTime.now());
         course.setUpdateTime(LocalDateTime.now());
         courseMapper.insert(course);
-
     }
 
     /**
@@ -97,7 +102,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public void deleteCourse(Integer courseId) {
         if (courseMapper.selectById(courseId) == null) {
-            throw new BaseException("课程不存在或已删除");
+            throw new BaseException(MessageConstant.COURSE_NOT_EXIST);
         }
         LambdaUpdateWrapper <Course> wrapper = Wrappers.lambdaUpdate(Course.class);
         wrapper.eq(Course::getId, courseId)
@@ -113,15 +118,15 @@ public class CourseServiceImpl implements CourseService {
      * @return
      */
     @Override
-    public PageResult<ScheduleQueryVO> getScheduleList(ScheduleQueryDTO scheduleQueryDTO) {
+    public PageResult<CourseScheduleQueryVO> getScheduleList(ScheduleQueryDTO scheduleQueryDTO) {
         long pageNum = scheduleQueryDTO.getPageNum() == null ? 1 : scheduleQueryDTO.getPageNum();
         long pageSize = scheduleQueryDTO.getPageSize() == null ? 10 : scheduleQueryDTO.getPageSize();
 
-        IPage<ScheduleQueryVO> iPage = new Page<>(pageNum, pageSize);
-        IPage<ScheduleQueryVO> voiPage = courseMapper.selectSchedulePage(iPage,scheduleQueryDTO);
+        IPage<CourseScheduleQueryVO> iPage = new Page<>(pageNum, pageSize);
+        IPage<CourseScheduleQueryVO> voiPage = courseMapper.selectSchedulePage(iPage,scheduleQueryDTO);
 
         // 遍历转换 week 格式
-        for (ScheduleQueryVO vo : voiPage.getRecords()) {
+        for (CourseScheduleQueryVO vo : voiPage.getRecords()) {
             vo.setWeek(WeekUtil.jsonToRangeStr(vo.getWeek()));
         }
 
@@ -182,7 +187,7 @@ public class CourseServiceImpl implements CourseService {
         //工具类查week的重复
         for (CourseSchedule courseSchedule : scheduleList) {
             if (WeekUtil.hasIntersection(courseSchedule.getWeek(), scheduleConflictDTO.getWeek())) {
-                throw new BaseException("存在排课冲突，请检查");
+                throw new BaseException(MessageConstant.SCHEDULE_CONFLICT);
             }
         }
     }
@@ -212,7 +217,7 @@ public class CourseServiceImpl implements CourseService {
             boolean conflictFound = false;
             for (CourseSchedule cs : scheduleList) {
                 if (WeekUtil.hasIntersection(cs.getWeek(), dto.getWeek())) {
-                    r.setConflict("与数据库中现有排课冲突");
+                    r.setConflict(MessageConstant.SCHEDULE_CONFLICT_DESC);
                     conflictFound = true;
                     break;
                 }
@@ -242,22 +247,22 @@ public class CourseServiceImpl implements CourseService {
 
                 // 检查教师冲突
                 if (a.getTeacherId() != null && a.getTeacherId().equals(b.getTeacherId())) {
-                    setConflictForResult(results, a.getTempId(), "与批量导入项冲突（教师）");
-                    setConflictForResult(results, b.getTempId(), "与批量导入项冲突（教师）");
+                    setConflictForResult(results, a.getTempId(), MessageConstant.CONFLICT_BATCH_TEACHER);
+                    setConflictForResult(results, b.getTempId(), MessageConstant.CONFLICT_BATCH_TEACHER);
                     continue;
                 }
 
                 // 检查班级冲突
                 if (a.getClassId() != null && a.getClassId().equals(b.getClassId())) {
-                    setConflictForResult(results, a.getTempId(), "与批量导入项冲突（班级）");
-                    setConflictForResult(results, b.getTempId(), "与批量导入项冲突（班级）");
+                    setConflictForResult(results, a.getTempId(), MessageConstant.CONFLICT_BATCH_CLASS);
+                    setConflictForResult(results, b.getTempId(), MessageConstant.CONFLICT_BATCH_CLASS);
                     continue;
                 }
 
                 // 检查教室冲突
                 if (a.getRoom() != null && b.getRoom() != null && a.getRoom().equals(b.getRoom())) {
-                    setConflictForResult(results, a.getTempId(), "与批量导入项冲突（教室）");
-                    setConflictForResult(results, b.getTempId(), "与批量导入项冲突（教室）");
+                    setConflictForResult(results, a.getTempId(), MessageConstant.CONFLICT_BATCH_ROOM);
+                    setConflictForResult(results, b.getTempId(), MessageConstant.CONFLICT_BATCH_ROOM);
                 }
             }
         }
@@ -274,7 +279,7 @@ public class CourseServiceImpl implements CourseService {
         //检查是否存在
         CourseSchedule schedule = courseMapper.selectScheduleById(id);
         if (schedule == null) {
-            throw new BaseException("排课记录不存在");
+            throw new BaseException(MessageConstant.SCHEDULE_NOT_EXIST);
         }
 
         courseMapper.deleteScheduleById(id);

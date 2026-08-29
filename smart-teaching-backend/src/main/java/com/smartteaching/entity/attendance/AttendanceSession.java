@@ -9,6 +9,12 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+/**
+ * @ClassName AttendanceSession
+ * @Description 考勤场次实体类，对应attendance_session表，管理每次考勤的课程与时间安排
+ * @Author MNT
+ * @Date 2026/8/14 10:33
+ **/
 @Data
 @TableName("attendance_session")
 public class AttendanceSession extends BaseEntity {

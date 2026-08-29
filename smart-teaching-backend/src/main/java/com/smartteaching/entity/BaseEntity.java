@@ -6,6 +6,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName BaseEntity
+ * @Description 实体基类，统一管理创建时间和更新时间字段的自动填充
+ * @Author MNT
+ * @Date 2026/8/14 08:56
+ **/
 @Data
 public class BaseEntity {
 

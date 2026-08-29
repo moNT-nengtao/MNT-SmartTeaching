@@ -4,8 +4,11 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 分页返回对象
- */
+ * @ClassName PageResult
+ * @Description 分页返回对象
+ * @Author MNT
+ * @Date 2026/8/14 09:23
+ **/
 @Data
 public class PageResult<T> {
     private Long total;

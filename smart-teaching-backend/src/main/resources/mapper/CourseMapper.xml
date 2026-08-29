@@ -5,7 +5,7 @@
 <mapper namespace="com.smartteaching.mapper.CourseMapper">
 
     <!--课程列表-->
-    <select id="selectCoursePage" resultType="com.smartteaching.common.vo.CourseQueryVO">
+    <select id="selectCoursePage" resultType="com.smartteaching.common.vo.course.CourseQueryVO">
         SELECT
         c.id, c.code, c.name, c.teacher_id,
         t.real_name AS teacherName,
@@ -36,7 +36,7 @@
     </select>
 
     <!--排课列表-->
-    <select id="selectSchedulePage" resultType="com.smartteaching.common.vo.ScheduleQueryVO">
+    <select id="selectSchedulePage" resultType="com.smartteaching.common.vo.course.CourseScheduleQueryVO">
         SELECT cs.id,cs.course_id,c.name AS courseName,cs.teacher_id,t.real_name AS teacherName,cs.class_id,oc.name AS className,
         cs.week,cs.day,cs.lesson,cs.room,cs.color,cs.status,cs.create_time,cs.update_time
         FROM course_schedule cs
@@ -83,7 +83,7 @@
     </update>
 
     <!--导出课表-->
-    <select id="selectExportList" resultType="com.smartteaching.common.vo.CourseScheduleExportVO">
+    <select id="selectExportList" resultType="com.smartteaching.common.vo.course.CourseScheduleExportVO">
         SELECT
         cs.day,
         cs.lesson,

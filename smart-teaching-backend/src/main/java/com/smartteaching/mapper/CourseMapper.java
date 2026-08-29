@@ -2,13 +2,13 @@ package com.smartteaching.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.smartteaching.common.dto.CourseQueryDTO;
-import com.smartteaching.common.dto.ScheduleConflictDTO;
-import com.smartteaching.common.dto.ScheduleQueryDTO;
-import com.smartteaching.common.dto.ScheduleSaveDTO;
-import com.smartteaching.common.vo.CourseQueryVO;
-import com.smartteaching.common.vo.CourseScheduleExportVO;
-import com.smartteaching.common.vo.ScheduleQueryVO;
+import com.smartteaching.common.dto.course.CourseQueryDTO;
+import com.smartteaching.common.dto.schedule.ScheduleConflictDTO;
+import com.smartteaching.common.dto.schedule.ScheduleQueryDTO;
+import com.smartteaching.common.dto.schedule.ScheduleSaveDTO;
+import com.smartteaching.common.vo.course.CourseQueryVO;
+import com.smartteaching.common.vo.course.CourseScheduleExportVO;
+import com.smartteaching.common.vo.course.CourseScheduleQueryVO;
 import com.smartteaching.entity.course.Course;
 import com.smartteaching.entity.course.CourseSchedule;
 import org.apache.ibatis.annotations.Delete;
@@ -37,8 +37,8 @@ public interface CourseMapper extends BaseMapper<Course> {
      * @param scheduleQueryDTO
      * @return
      */
-    IPage<ScheduleQueryVO> selectSchedulePage(@Param("iPage") IPage<ScheduleQueryVO> iPage,
-                                              @Param("scheduleQueryDTO") ScheduleQueryDTO scheduleQueryDTO);
+    IPage<CourseScheduleQueryVO> selectSchedulePage(@Param("iPage") IPage<CourseScheduleQueryVO> iPage,
+                                                    @Param("scheduleQueryDTO") ScheduleQueryDTO scheduleQueryDTO);
 
 
     /**

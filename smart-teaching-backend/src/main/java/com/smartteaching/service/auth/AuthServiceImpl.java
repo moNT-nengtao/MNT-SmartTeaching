@@ -4,14 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.smartteaching.common.constant.MessageConstant;
-import com.smartteaching.common.dto.UserChangePasswordDTO;
-import com.smartteaching.common.dto.UserLoginDTO;
+import com.smartteaching.common.dto.user.UserChangePasswordDTO;
+import com.smartteaching.common.dto.user.UserLoginDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.exception.PasswordErrorException;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +20,12 @@ import org.springframework.util.DigestUtils;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName AuthServiceImpl
+ * @Description 认证服务实现类
+ * @Author MNT
+ * @Date 2026/8/15 14:13
+ **/
 @Service
 public class AuthServiceImpl implements AuthService {
 

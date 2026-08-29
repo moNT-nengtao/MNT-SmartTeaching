@@ -1,6 +1,6 @@
 package com.smartteaching.common.utils;
 
-import com.smartteaching.common.dto.UserExcelDTO;
+import com.smartteaching.common.dto.user.UserExcelDTO;
 import com.smartteaching.entity.org.ClassInfo;
 import com.smartteaching.entity.org.College;
 import com.smartteaching.entity.org.Major;

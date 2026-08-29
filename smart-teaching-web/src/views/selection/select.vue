@@ -9,6 +9,15 @@
       class="mb-20"
     />
 
+    <!-- 退课状态提示 -->
+    <el-alert
+      v-if="!isDropOpen"
+      title="当前不在退课开放时间内，无法退课"
+      type="info"
+      :closable="false"
+      class="mb-20"
+    />
+
     <el-tabs v-model="activeTab">
       <!-- 全部课程 -->
       <el-tab-pane label="全部课程" name="all">
@@ -35,16 +44,26 @@
               </div>
               <div class="course-footer">
                 <el-rate v-model="course.rating" disabled show-score text-color="#ff9900" score-template="{value}" :max="5" />
-                <el-button
-                  v-if="!course.isSelected"
-                  type="primary"
-                  size="small"
-                  :disabled="!isSelectionOpen || course.remaining <= 0"
-                  @click="handleSelect(course)"
-                >
-                  选课
-                </el-button>
-                <el-button v-else type="danger" size="small" @click="handleDrop(course)">退课</el-button>
+                <div class="footer-buttons">
+                  <el-button
+                    v-if="!course.isSelected"
+                    type="primary"
+                    size="small"
+                    :disabled="!isSelectionOpen || course.remaining <= 0"
+                    @click="handleSelect(course)"
+                  >
+                    选课
+                  </el-button>
+                  <el-button
+                    v-else
+                    type="danger"
+                    size="small"
+                    :disabled="!isDropOpen"
+                    @click="handleDrop(course)"
+                  >
+                    退课
+                  </el-button>
+                </div>
               </div>
             </div>
           </el-col>
@@ -66,7 +85,14 @@
                 <p>授课教师：{{ course.teacherName }}</p>
                 <p>剩余名额：{{ course.remaining }} / {{ course.maxStudents }}</p>
               </div>
-              <el-button type="primary" size="small" @click="handleSelect(course)">选课</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="!isSelectionOpen || course.remaining <= 0"
+                @click="handleSelect(course)"
+              >
+                选课
+              </el-button>
             </div>
           </el-col>
         </el-row>
@@ -86,6 +112,7 @@ import { getSelectionCourseList, getRecommendCourses, selectCourse, dropCourse, 
 
 const activeTab = ref('all')
 const isSelectionOpen = ref(true)
+const isDropOpen = ref(true)
 const courseList = ref([])
 const recommendList = ref([])
 const total = ref(0)
@@ -99,8 +126,26 @@ const fetchConfig = async () => {
   try {
     const res = await getSelectionConfig()
     const now = new Date()
-    isSelectionOpen.value = new Date(res.data.startTime) <= now && now <= new Date(res.data.endTime)
-  } catch (e) {}
+    const startTime = new Date(res.data.startTime)
+    const endTime = new Date(res.data.endTime)
+    
+    // 选课时间范围
+    isSelectionOpen.value = startTime <= now && now <= endTime
+    
+    // 退课时间范围（可以单独配置，或者使用选课时间范围）
+    // 方案一：退课使用选课时间范围
+    isDropOpen.value = startTime <= now && now <= endTime
+    
+    // 方案二：退课时间范围更长（例如选课结束后的3天内仍可退课）
+    // const dropEndTime = new Date(endTime)
+    // dropEndTime.setDate(dropEndTime.getDate() + 3)
+    // isDropOpen.value = startTime <= now && now <= dropEndTime
+    
+    // 方案三：如果后端返回了退课时间范围
+    // isDropOpen.value = new Date(res.data.dropStartTime) <= now && now <= new Date(res.data.dropEndTime)
+  } catch (e) {
+    console.error('获取选课配置失败', e)
+  }
 }
 
 const fetchList = async () => {
@@ -113,17 +158,30 @@ const fetchList = async () => {
       rating: c.avgScore || 0
     }))
     total.value = res.data?.total ?? 0
-  } catch (e) {}
+  } catch (e) {
+    console.error('获取课程列表失败', e)
+  }
 }
 
 const fetchRecommend = async () => {
   try {
     const res = await getRecommendCourses()
     recommendList.value = res.data || []
-  } catch (e) {}
+  } catch (e) {
+    console.error('获取推荐课程失败', e)
+  }
 }
 
 const handleSelect = (course) => {
+  if (!isSelectionOpen.value) {
+    ElMessage.warning('当前不在选课时间内')
+    return
+  }
+  if (course.remaining <= 0) {
+    ElMessage.warning('该课程已满')
+    return
+  }
+  
   ElMessageBox.confirm(`确定选择课程「${course.courseName}」吗？`, '选课确认', { type: 'info' })
     .then(async () => {
       await selectCourse(course.id)
@@ -134,6 +192,11 @@ const handleSelect = (course) => {
 }
 
 const handleDrop = (course) => {
+  if (!isDropOpen.value) {
+    ElMessage.warning('当前不在退课时间内')
+    return
+  }
+  
   ElMessageBox.confirm(`确定退选课程「${course.courseName}」吗？`, '退课确认', { type: 'warning' })
     .then(async () => {
       await dropCourse(course.id)
@@ -193,6 +256,11 @@ onMounted(() => {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
+}
+
+.footer-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .text-danger {

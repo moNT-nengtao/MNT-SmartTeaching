@@ -8,6 +8,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName NoticeReadRecord
+ * @Description 公告已读记录实体类，对应notice_read_record表，记录用户对公告的阅读状态
+ * @Author MNT
+ * @Date 2026/8/14 08:19
+ **/
 @Data
 @TableName("notice_read_record")
 public class NoticeReadRecord extends BaseEntity {

@@ -6,6 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.smartteaching.entity.BaseEntity;
 import lombok.Data;
 
+/**
+ * @ClassName Question
+ * @Description 问答提问实体类，对应qa_question表，管理用户发布的提问与互动统计
+ * @Author MNT
+ * @Date 2026/8/14 11:53
+ **/
 @Data
 @TableName("qa_question")
 public class Question extends BaseEntity {

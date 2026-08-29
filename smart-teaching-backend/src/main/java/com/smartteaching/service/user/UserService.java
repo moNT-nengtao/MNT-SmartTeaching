@@ -1,10 +1,16 @@
 package com.smartteaching.service.user;
 
-import com.smartteaching.common.dto.UserSaveDTO;
-import com.smartteaching.common.dto.UserQueryDTO;
+import com.smartteaching.common.dto.user.UserSaveDTO;
+import com.smartteaching.common.dto.user.UserQueryDTO;
 import com.smartteaching.common.result.PageResult;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * @ClassName UserService
+ * @Description 用户服务接口
+ * @Author MNT
+ * @Date 2026/8/15 13:37
+ **/
 public interface UserService {
 
     /**

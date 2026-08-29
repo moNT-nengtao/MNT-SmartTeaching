@@ -3,7 +3,7 @@ package com.smartteaching.common.utils;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
-import com.smartteaching.common.dto.OrgExcelDTO;
+import com.smartteaching.common.dto.org.OrgExcelDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 

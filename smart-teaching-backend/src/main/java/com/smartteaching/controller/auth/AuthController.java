@@ -1,11 +1,11 @@
 package com.smartteaching.controller.auth;
 
-import com.smartteaching.common.dto.UserChangePasswordDTO;
-import com.smartteaching.common.dto.UserLoginDTO;
+import com.smartteaching.common.dto.user.UserChangePasswordDTO;
+import com.smartteaching.common.dto.user.UserLoginDTO;
 import com.smartteaching.common.exception.TokenInvalidException;
 import com.smartteaching.common.result.Result;
 import com.smartteaching.common.utils.JwtUtil;
-import com.smartteaching.common.vo.UserLoginVO;
+import com.smartteaching.common.vo.user.UserLoginVO;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.service.auth.AuthService;
 import jakarta.validation.Valid;
@@ -18,6 +18,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @ClassName AuthController
+ * @Description 认证控制器
+ * @Author MNT
+ * @Date 2026/8/15 16:51
+ **/
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
@@ -34,7 +40,7 @@ public class AuthController {
 
     /**
      * 用户登录
-     *
+     * TODO 后续存储密码改为用BCryptPasswordEncoder，调用passwordEncoder.matches()加密存储
      * @param userLoginDTO 登录参数
      * @return token + 用户信息
      */

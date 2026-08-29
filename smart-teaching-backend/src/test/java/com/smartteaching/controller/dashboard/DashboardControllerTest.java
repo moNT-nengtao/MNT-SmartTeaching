@@ -1,6 +1,6 @@
 package com.smartteaching.controller.dashboard;
 
-import com.smartteaching.common.dto.UserLoginDTO;
+import com.smartteaching.common.dto.user.UserLoginDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.mapper.UserMapper;

@@ -6,6 +6,12 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName Course
+ * @Description 课程实体类，对应course表，管理课程基本信息与容量状态
+ * @Author MNT
+ * @Date 2026/8/14 14:05
+ **/
 @Data
 @TableName("course")
 public class Course {

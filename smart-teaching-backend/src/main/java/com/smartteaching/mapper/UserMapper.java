@@ -2,8 +2,8 @@ package com.smartteaching.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.smartteaching.common.dto.UserQueryDTO;
-import com.smartteaching.common.vo.UserQueryVO;
+import com.smartteaching.common.dto.user.UserQueryDTO;
+import com.smartteaching.common.vo.user.UserQueryVO;
 import com.smartteaching.entity.user.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

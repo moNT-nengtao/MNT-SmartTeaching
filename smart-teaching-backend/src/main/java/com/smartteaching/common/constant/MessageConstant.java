@@ -1,8 +1,11 @@
 package com.smartteaching.common.constant;
 
 /**
- * 信息提示常量类
- */
+ * @ClassName MessageConstant
+ * @Description 信息常量类
+ * @Author MNT
+ * @Date 2026/8/14 14:37
+ **/
 public class MessageConstant {
 
     // ========== 用户认证相关 ==========
@@ -31,29 +34,63 @@ public class MessageConstant {
     public static final String ACCOUNT_DISABLED = "账号已被禁用";
     public static final String OPERATE_USER_NOT_EXIST = "操作用户已不存在";
 
-
-    // ========== Excel批量导入用户  ==========
+    // ========== Excel批量导入用户 ==========
     public static final String EXCEL_READ_IO_FAIL = "读取 Excel 文件失败";
     public static final String EXCEL_IMPORT_VALID_ERROR_TPL = "导入失败，共 %d 条错误：%s";
     public static final String EXCEL_FILE_EMPTY = "Excel 文件为空或没有有效数据";
     public static final String NO_VALID_DATA_IMPORT = "没有有效数据可导入";
 
     // ========== 组织节点 ==========
+    // -- 学院 --
+    public static final String COLLEGE_NOT_EXIST = "学院不存在";
+    public static final String COLLEGE_NOT_EXIST_OR_DISABLED = "所属学院不存在或已禁用";
     public static final String COLLEGE_HAS_MAJOR = "该学院下存在专业，禁止删除，请先删除下属专业";
+    public static final String REVERT_COLLEGE_FAIL = "恢复学院失败";
+    public static final String DISABLED_COLLEGE_EXISTS = "存在已禁用的同名学院：%s，请先恢复或修改名称";
+
+    // -- 专业 --
+    public static final String MAJOR_NOT_EXIST = "专业不存在";
+    public static final String MAJOR_NOT_EXIST_OR_DISABLED = "所属专业不存在或已禁用";
     public static final String MAJOR_HAS_CLASS = "该专业下存在班级，禁止删除，请先删除下属班级";
+    public static final String REVERT_MAJOR_FAIL = "恢复专业失败";
+    public static final String DISABLED_MAJOR_EXISTS = "存在已禁用的同名专业：%s，请先恢复或修改名称";
+
+    // -- 班级 --
+    public static final String CLASS_NOT_EXIST = "班级不存在";
     public static final String CLASS_HAS_STUDENT = "该班级下存在学生，禁止删除，请先移除该班级下的学生";
+    public static final String CLASS_GRADE_YEAR_NOT_NULL = "班级年级不能为空";
+    public static final String REVERT_CLASS_FAIL = "恢复班级失败";
+    public static final String DISABLED_CLASS_EXISTS = "存在已禁用的同名班级：%s，请先恢复或修改名称";
+
+    // -- 通用 --
     public static final String ORG_TYPE_ILLEGAL = "非法节点类型 ";
     public static final String ADD_ORG_NODE_FAIL = "新增组织节点失败";
     public static final String EDIT_ORG_NODE_FAIL = "编辑组织节点失败";
-
     public static final String ORG_NODE_NOT_EXIST = "该组织节点不存在";
-    public static final String CLASS_GRADE_YEAR_NOT_NULL = "班级年级不能为空";
-    public static final String CLASS_NOT_EXIST = "班级不存在";
-    public static final String COLLEGE_NOT_EXIST_OR_DISABLED = "所属学院不存在或已禁用";
-    public static final String MAJOR_NOT_EXIST = "专业不存在";
-    public static final String COLLEGE_NOT_EXIST = "学院不存在";
-    public static final String REVERT_CLASS_FAIL = "恢复班级失败";
-    public static final String MAJOR_NOT_EXIST_OR_DISABLED = "所属专业不存在或已禁用";
-    public static final String REVERT_MAJOR_FAIL = "恢复专业失败";
-    public static final String REVERT_COLLEGE_FAIL = "恢复学院失败";
+
+    // ========== 课程管理 ==========
+    public static final String COURSE_NOT_EXIST = "该课程已不存在";
+    public static final String COURSE_CODE_EXISTS = "已经存在编号：%s";
+
+    // ========== 排课管理 ==========
+    public static final String CONFLICT_BATCH_TEACHER = "与批量导入项冲突（教师）";
+    public static final String CONFLICT_BATCH_CLASS = "与批量导入项冲突（班级）";
+    public static final String CONFLICT_BATCH_ROOM = "与批量导入项冲突（教室）";
+    public static final String SCHEDULE_CONFLICT = "存在排课冲突，请检查";
+    public static final String SCHEDULE_CONFLICT_DESC = "与数据库中现有排课冲突";
+    public static final String SCHEDULE_NOT_EXIST = "排课记录不存在";
+
+    // ========== 成绩统计 ==========
+    public static final String SCORE_EXCELLENT = "优秀(≥90)";
+    public static final String SCORE_GOOD = "良好(80‑89)";
+    public static final String SCORE_MEDIUM = "中等(70‑79)";
+    public static final String SCORE_PASS = "及格(60‑69)";
+    public static final String SCORE_FAIL = "不及格(<60)";
+
+    // ========== 推荐系统 ==========
+    public static final String RECOMMEND_REASON_TEACHER = "您选择过的教师";
+    public static final String RECOMMEND_REASON_MAJOR = "与您的专业相关";
+    public static final String RECOMMEND_REASON_HOT_COURSE = "热门课程推荐";
+    public static final String RECOMMEND_REASON_HIGH_SCORE_COURSE = "高分课程推荐";
+
 }

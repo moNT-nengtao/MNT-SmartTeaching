@@ -4,4 +4,213 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.ScoreMapper">
 
+    <!-- 成绩统计公共JOIN片段：学期来自course表 -->
+    <sql id="scoreJoin">
+        FROM student_score ss
+        LEFT JOIN course c ON ss.course_id = c.id
+        LEFT JOIN sys_user stu ON ss.student_id = stu.id
+        WHERE ss.status = 1
+        AND c.status = 1
+        AND stu.role = 'student'
+        AND ss.score IS NOT NULL
+        <if test="dto.semester != null and dto.semester!=''">
+            AND c.semester = #{dto.semester}
+        </if>
+        <if test="dto.collegeId != null">
+            AND stu.college_id = #{dto.collegeId}
+        </if>
+    </sql>
+
+    <!-- 查询统计卡片总数据 -->
+    <select id="selectStatCard" resultType="com.smartteaching.common.vo.score.ScoreStatsQueryVO$StatCardData">
+        SELECT
+        COALESCE(COUNT(DISTINCT ss.student_id),0) AS totalStudents,
+        COALESCE(AVG(ss.score),0) AS avgScore,
+        COALESCE(SUM(CASE WHEN ss.score &gt;= 60 THEN 1 ELSE 0 END),0) AS passStudent,
+        COALESCE(SUM(CASE WHEN ss.score &lt; 60 THEN 1 ELSE 0 END),0) AS failCount,
+        COALESCE(COUNT(ss.score),0) AS totalRecord
+        <include refid="scoreJoin"/>
+    </select>
+
+    <!-- 查询成绩分段饼图原始计数 -->
+    <select id="selectScoreDistribution" resultType="com.smartteaching.common.vo.score.ScoreStatsQueryVO$ScoreDistribution">
+        SELECT
+        COALESCE(SUM(CASE WHEN ss.score &gt;= 90 THEN 1 ELSE 0 END),0) AS excellentCount,
+        COALESCE(SUM(CASE WHEN ss.score BETWEEN 80 AND 89 THEN 1 ELSE 0 END),0) AS goodCount,
+        COALESCE(SUM(CASE WHEN ss.score BETWEEN 70 AND 79 THEN 1 ELSE 0 END),0) AS mediumCount,
+        COALESCE(SUM(CASE WHEN ss.score BETWEEN 60 AND 69 THEN 1 ELSE 0 END),0) AS passCount,
+        COALESCE(SUM(CASE WHEN ss.score &lt; 60 THEN 1 ELSE 0 END),0) AS failCount
+        <include refid="scoreJoin"/>
+    </select>
+
+    <!-- 查询各学院平均分对比 -->
+    <select id="selectCollegeAvgScore" resultType="com.smartteaching.common.vo.score.ScoreStatsQueryVO$CollegeScoreCompare$Item">
+        SELECT
+        org_college.name AS colleges,
+        AVG(ss.score) AS avgScores,
+        COUNT(DISTINCT ss.student_id) AS studentCounts
+        FROM student_score ss
+        LEFT JOIN course c ON ss.course_id = c.id
+        LEFT JOIN sys_user stu ON ss.student_id = stu.id
+        LEFT JOIN org_college ON stu.college_id = org_college.id
+        WHERE ss.status = 1
+        AND c.status = 1
+        AND stu.role = 'student'
+        AND ss.score IS NOT NULL
+        <if test="dto.semester != null and dto.semester!=''">
+            AND c.semester = #{dto.semester}
+        </if>
+        <if test="dto.collegeId != null">
+            AND stu.college_id = #{dto.collegeId}
+        </if>
+        GROUP BY org_college.name
+    </select>
+
+    <!-- 查询异常成绩列表 -->
+    <select id="selectAbnormalScorePage" resultType="com.smartteaching.common.vo.score.ScoreStatsQueryVO$AbnormalScore">
+        SELECT
+        stu.username AS studentNo,
+        stu.real_name AS studentName,
+        c.name AS courseName,
+        ss.score AS totalScore,
+        '成绩低于60分，判定为异常成绩' AS reason
+        <include refid="scoreJoin"/>
+        AND ss.score &lt; 60
+    </select>
+
+    <!-- 导出异常成绩列表 -->
+    <select id="selectExportList" resultType="com.smartteaching.common.vo.score.ScoreExportVO">
+        SELECT
+        stu.username AS studentNo,
+        stu.real_name AS studentName,
+        c.name AS courseName,
+        ss.score AS totalScore,
+        '成绩低于60分，判定为异常成绩' AS reason,
+        org_college.name AS collegeName,
+        c.semester AS semester
+        FROM student_score ss
+        LEFT JOIN course c ON ss.course_id = c.id
+        LEFT JOIN sys_user stu ON ss.student_id = stu.id
+        LEFT JOIN org_college ON stu.college_id = org_college.id
+        WHERE ss.status = 1
+        AND c.status = 1
+        AND stu.role = 'student'
+        AND ss.score IS NOT NULL
+        AND ss.score &lt; 60
+        <if test="dto.collegeId != null">
+            AND stu.college_id = #{dto.collegeId}
+        </if>
+        <if test="dto.semester != null and dto.semester != ''">
+            AND c.semester = #{dto.semester}
+        </if>
+        ORDER BY org_college.name, stu.username
+    </select>
+
+    <!-- 我的成绩列表 -->
+    <select id="selectMyScore" resultType="com.smartteaching.common.vo.score.ScoreMyQueryVO">
+        SELECT
+        c.name AS courseName,
+        c.credit AS credit,
+        sc.usual_score AS usualScore,
+        sc.final_score AS finalScore,
+        sc.score AS totalScore,
+        c.semester AS semester
+        FROM student_score sc
+        INNER JOIN course c ON sc.course_id = c.id
+        WHERE sc.student_id = #{studentId}
+        <if test="dto.semester != null and dto.semester != ''">
+            AND c.semester = #{dto.semester}
+        </if>
+        ORDER BY c.semester DESC, c.name
+    </select>
+
+
+    <!-- 获取课程成绩列表（教师录入用）- 显示所有选课学生 -->
+    <select id="selectCourseScoreList" resultType="com.smartteaching.common.vo.score.ScoreCourseQueryVO">
+        SELECT
+            sr.student_id AS studentId,
+            su.username AS studentNo,
+            su.real_name AS studentName,
+            COALESCE(oc.name, '未分配班级') AS className,
+            ss.id,
+            ss.usual_score AS usualScore,
+            ss.final_score AS finalScore,
+            ss.score,
+            ss.remark
+        FROM selection_record sr
+                 LEFT JOIN sys_user su ON sr.student_id = su.id AND su.role = 'student'
+                 LEFT JOIN org_class oc ON su.class_id = oc.id
+                 LEFT JOIN student_score ss ON sr.student_id = ss.student_id
+            AND sr.course_id = ss.course_id
+            AND ss.status = 1
+        WHERE sr.course_id = #{courseId}
+          AND sr.status = 1
+        ORDER BY su.username ASC
+    </select>
+
+    <!-- 批量更新成绩 -->
+    <insert id="insertOrUpdateBatch">
+        INSERT INTO student_score (
+        course_id, student_id, teacher_id,
+        score, usual_score, final_score,
+        remark, status, create_time, update_time
+        ) VALUES
+        <foreach collection="scores" item="item" separator=",">
+            (
+            #{courseId}, #{item.studentId}, #{item.teacherId},
+            #{item.score}, #{item.usualScore}, #{item.finalScore},
+            #{item.remark}, #{item.status}, #{item.createTime}, #{item.updateTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        teacher_id = VALUES(teacher_id),
+        score = VALUES(score),
+        usual_score = VALUES(usual_score),
+        final_score = VALUES(final_score),
+        remark = VALUES(remark),
+        status = VALUES(status),
+        update_time = VALUES(update_time)
+    </insert>
+
+    <!-- 批量导出成绩 -->
+    <select id="selectScoreCourseExportList" resultType="com.smartteaching.common.vo.score.ScoreCourseExportVO">
+        SELECT
+        s.username AS studentNo,
+        s.real_name AS studentName,
+        oc.name AS className,
+        ss.usual_score AS usualScore,
+        ss.final_score AS finalScore,
+        ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) AS totalScore,
+        CASE
+        WHEN ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) >= 90 THEN '优秀'
+        WHEN ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) >= 80 THEN '良好'
+        WHEN ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) >= 70 THEN '中等'
+        WHEN ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) >= 60 THEN '及格'
+        ELSE '不及格'
+        END AS level,
+        CASE
+        WHEN ROUND(ss.usual_score * 0.3 + ss.final_score * 0.7) >= 60 THEN '及格'
+        ELSE '不及格'
+        END AS status,
+        ss.remark AS remark
+        FROM
+        student_score ss
+        INNER JOIN sys_user s ON ss.student_id = s.id
+        INNER JOIN org_class oc ON s.class_id = oc.id
+        INNER JOIN course c ON ss.course_id = c.id
+        <where>
+            <if test="courseId != null and courseId != ''">
+                AND ss.course_id = #{courseId}
+            </if>
+            <if test="courseName != null and courseName != ''">
+                AND c.name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+            AND ss.usual_score IS NOT NULL
+            AND ss.final_score IS NOT NULL
+            AND ss.status = 1
+            AND s.role = 'student'
+        </where>
+        ORDER BY s.username ASC
+    </select>
+
 </mapper>

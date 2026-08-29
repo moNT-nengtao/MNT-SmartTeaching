@@ -8,6 +8,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName Notice
+ * @Description 公告通知实体类，对应notice表，管理系统发布的公告信息
+ * @Author MNT
+ * @Date 2026/8/14 12:43
+ **/
 @Data
 @TableName("notice")
 public class Notice extends BaseEntity {

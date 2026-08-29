@@ -15,6 +15,12 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * @ClassName CustomUserDetailsService
+ * @Description 自定义用户认证服务
+ * @Author MNT
+ * @Date 2026/8/15 10:57
+ **/
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {

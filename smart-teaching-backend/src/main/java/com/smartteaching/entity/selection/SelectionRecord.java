@@ -8,6 +8,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ClassName SelectionRecord
+ * @Description 选课记录实体类，对应selection_record表，记录学生选课操作及选课状态
+ * @Author MNT
+ * @Date 2026/8/14 07:52
+ **/
 @Data
 @TableName("selection_record")
 public class SelectionRecord extends BaseEntity {

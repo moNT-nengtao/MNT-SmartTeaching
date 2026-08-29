@@ -5,15 +5,15 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.smartteaching.common.constant.MessageConstant;
-import com.smartteaching.common.dto.OrgDTO;
-import com.smartteaching.common.dto.OrgExcelDTO;
-import com.smartteaching.common.vo.OrgExportVO;
+import com.smartteaching.common.dto.org.OrgDTO;
+import com.smartteaching.common.dto.org.OrgExcelDTO;
+import com.smartteaching.common.vo.org.OrgExportVO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.utils.OrgExcelUtil;
-import com.smartteaching.common.vo.OrgClassVO;
-import com.smartteaching.common.vo.OrgCollegeListVO;
-import com.smartteaching.common.vo.OrgMajorVO;
-import com.smartteaching.common.vo.OrgTreeVO;
+import com.smartteaching.common.vo.org.OrgClassVO;
+import com.smartteaching.common.vo.org.OrgCollegeListVO;
+import com.smartteaching.common.vo.org.OrgMajorVO;
+import com.smartteaching.common.vo.org.OrgTreeVO;
 import com.smartteaching.entity.org.ClassInfo;
 import com.smartteaching.entity.org.College;
 import com.smartteaching.entity.org.Major;
@@ -32,6 +32,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @ClassName OrgServiceImpl
+ * @Description 组织服务实现类
+ * @Author MNT
+ * @Date 2026/8/16 10:18
+ **/
 @Service
 @Slf4j
 public class OrgServiceImpl implements OrgService {
@@ -62,14 +68,13 @@ public class OrgServiceImpl implements OrgService {
 
     /**
      * 获取专业列表
+     *
      * @param collegeId 学院id，可为null
-     * @param isSelect
      * @return 专业VO集合
      */
     @Override
-    public List<OrgMajorVO> getOrgMajorList(Long collegeId, boolean isSelect) {
-        Integer status = isSelect ? 1 : null;
-        List<Major> entityList = orgMapper.selectMajorList(collegeId, status);
+    public List<OrgMajorVO> getOrgMajorList(Long collegeId) {
+        List<Major> entityList = orgMapper.selectMajorList(collegeId,1);
 
         return entityList.stream()
                 .map(entity -> {
@@ -287,7 +292,7 @@ public class OrgServiceImpl implements OrgService {
                 College existing = orgMapper.getCollegeByNameAllStatus(name);
                 if (existing != null) {
                     if (existing.getStatus() == 1) throw new BaseException(MessageConstant.ALREADY_EXISTS + "：" + name);
-                    throw new BaseException("存在已禁用的同名学院：" + name + "，请先恢复或修改名称");
+                    throw new BaseException(String.format(MessageConstant.DISABLED_COLLEGE_EXISTS, name));
                 }
             }
 
@@ -312,7 +317,7 @@ public class OrgServiceImpl implements OrgService {
                 Major existing = orgMapper.getMajorByNameAllStatus(name);
                 if (existing != null) {
                     if (existing.getStatus() == 1) throw new BaseException(MessageConstant.ALREADY_EXISTS + "：" + name);
-                    throw new BaseException("存在已禁用的同名专业：" + name + "，请先恢复或修改名称");
+                    throw new BaseException(String.format(MessageConstant.DISABLED_MAJOR_EXISTS, name));
                 }
             }
 
@@ -340,7 +345,7 @@ public class OrgServiceImpl implements OrgService {
                 ClassInfo existing = orgMapper.getClassByNameAllStatus(name);
                 if (existing != null) {
                     if (existing.getStatus() == 1) throw new BaseException(MessageConstant.ALREADY_EXISTS + "：" + name);
-                    throw new BaseException("存在已禁用的同名班级：" + name + "，请先恢复或修改名称");
+                    throw new BaseException(String.format(MessageConstant.DISABLED_CLASS_EXISTS, name));
                 }
             }
 

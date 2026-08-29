@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.UserMapper">
 
-    <resultMap id="UserQueryVOMap" type="com.smartteaching.common.vo.UserQueryVO">
+    <resultMap id="UserQueryVOMap" type="com.smartteaching.common.vo.user.UserQueryVO">
         <id column="id" property="id"/>
         <result column="username" property="username"/>
         <result column="real_name" property="realName"/>
