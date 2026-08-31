@@ -4,4 +4,235 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.DashboardMapper">
 
+    <!-- 统计卡片数据 -->
+    <select id="selectDashboardAdminCard" resultType="com.smartteaching.common.vo.dashborad.DashboardAdminVO$StatCards">
+        SELECT
+                (SELECT COUNT(*) FROM org_class WHERE status=1) AS classCount,
+                (SELECT COUNT(*) FROM sys_user WHERE role='teacher' AND status=1) AS teacherCount,
+                (SELECT COUNT(*) FROM sys_user WHERE role='student' AND status=1) AS studentCount,
+                (SELECT COUNT(*) FROM course WHERE status=1) AS courseCount,
+                -- 选课率：已选课学生 / 总有效学生 *100
+                ROUND(IFNULL((SELECT COUNT(DISTINCT student_id) FROM selection_record WHERE status=1) *100.0 /
+                             NULLIF((SELECT COUNT(*) FROM sys_user WHERE role='student' AND status=1),0),0),2) AS selectionRate,
+                -- 考勤合格率：签到成功记录 / 全部考勤记录 *100
+                ROUND(IFNULL((SELECT COUNT(*) FROM attendance_record WHERE status=1)*100.0 /
+                             NULLIF((SELECT COUNT(*) FROM attendance_record),0),0),2) AS attendanceRate
+    </select>
+
+    <!-- 各学院学生人数分布 -->
+    <select id="selectCollegeStudentCount" resultType="java.util.Map">
+        SELECT oc.name AS collegeName, COUNT(su.id) AS studentNum
+        FROM org_college oc
+                 LEFT JOIN sys_user su ON oc.id = su.college_id AND su.role='student' AND su.status=1
+        WHERE oc.status=1
+        GROUP BY oc.id, oc.name
+        ORDER BY oc.sort
+    </select>
+
+    <!-- 师生总人数 -->
+    <select id="selectTeacherStudentTotal" resultType="java.util.Map">
+        SELECT
+                (SELECT COUNT(*) FROM sys_user WHERE role='teacher' AND status=1) AS teacherCount,
+                (SELECT COUNT(*) FROM sys_user WHERE role='student' AND status=1) AS studentCount
+    </select>
+
+    <!-- 近7日活跃用户：last_login_time 匹配日期 -->
+    <select id="selectWeeklyActiveUser" resultType="java.util.Map">
+        SELECT DATE_FORMAT(last_login_time,'%Y‑%m‑%d') AS day, COUNT(DISTINCT id) AS activeNum
+        FROM sys_user
+        WHERE status=1 AND DATE_FORMAT(last_login_time,'%Y‑%m‑%d') IN
+        <foreach collection="dateList" open="(" separator="," close=")" item="d">
+            #{d}
+        </foreach>
+        GROUP BY day
+    </select>
+
+<!--教师仪表盘-->
+    <!--统计卡片-->
+    <select id="selectDashboardTeacherCard" resultType="com.smartteaching.common.vo.dashborad.DashboardTeacherVO$TeacherStatCards">
+        SELECT
+            COUNT(DISTINCT c.id) AS courseCount,
+            COUNT(DISTINCT sr.student_id) AS studentTotal,
+            ROUND(AVG(ss.score),2) AS avgScore
+        FROM course c
+                 LEFT JOIN selection_record sr ON c.id = sr.course_id AND sr.status = 1
+                 LEFT JOIN student_score ss ON c.id = ss.course_id AND ss.status = 1
+        WHERE c.teacher_id = #{teacherId} AND c.status = 1
+    </select>
+
+    <!--成绩分布柱状图-->
+    <select id="selectTeacherScoreSegment" resultType="java.util.Map">
+        SELECT
+            CAST(SUM(CASE WHEN ss.score &lt; 60 THEN 1 ELSE 0 END) AS SIGNED) AS s0,
+            CAST(SUM(CASE WHEN ss.score BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS SIGNED) AS s60,
+            CAST(SUM(CASE WHEN ss.score BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS SIGNED) AS s70,
+            CAST(SUM(CASE WHEN ss.score BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS SIGNED) AS s80,
+            CAST(SUM(CASE WHEN ss.score &gt;= 90 THEN 1 ELSE 0 END) AS SIGNED) AS s90
+        FROM student_score ss
+        WHERE ss.teacher_id = #{teacherId} AND ss.status = 1
+    </select>
+
+    <!--教师平均评价分数-->
+    <select id="selectTeacherAvgEvaluate" resultType="java.math.BigDecimal">
+        SELECT ROUND(AVG(ce.score),2)
+        FROM course_evaluation ce
+        WHERE ce.teacher_id = #{teacherId}
+    </select>
+
+    <!--近7日考勤签到率趋势-->
+    <select id="selectTeacherAttendanceTrend" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(ats.session_date, '%m-%d') AS day,
+            ROUND(
+                IFNULL(
+                    (SELECT COUNT(*)
+                     FROM attendance_record ar
+                     WHERE ar.session_id = ats.id AND ar.status = 1) * 100.0 /
+                    NULLIF(
+                        (SELECT COUNT(*)
+                         FROM sys_user su
+                         WHERE su.class_id = ats.class_id
+                           AND su.role = 'student'
+                           AND su.status = 1),
+                        0
+                    ),
+                    0
+                ), 2
+            ) AS rate
+        FROM attendance_session ats
+        WHERE ats.teacher_id = #{teacherId}
+          AND ats.session_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+          AND ats.session_date &lt; CURDATE()
+        GROUP BY ats.id, ats.session_date
+        ORDER BY ats.session_date ASC
+    </select>
+
+<!--学生-->
+
+    <!-- 计算学生GPA -->
+    <select id="calculateGPA" resultType="java.math.BigDecimal">
+        SELECT ROUND(SUM(ss.score * c.credit) / SUM(c.credit), 2)
+        FROM student_score ss
+                 JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+          AND ss.score >= 60
+    </select>
+
+    <!-- 计算已修学分（及格课程） -->
+    <select id="calculateFinishedCredit" resultType="java.math.BigDecimal">
+        SELECT ROUND(SUM(c.credit), 2)
+        FROM student_score ss
+                 JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+          AND ss.score >= 60
+    </select>
+
+    <!-- 统计挂科科目数 -->
+    <select id="countFailSubjects" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM student_score ss
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+          AND ss.score &lt; 60
+    </select>
+
+    <!-- ==================== 雷达图：各科成绩 ==================== -->
+
+    <!-- 获取学生各科成绩（用于雷达图） -->
+    <select id="getStudentScores" resultType="java.util.HashMap">
+        SELECT c.name AS course_name, ss.score
+        FROM student_score ss
+                 JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+        ORDER BY ss.create_time DESC
+    </select>
+
+    <!-- ==================== 绩点趋势 ==================== -->
+
+    <!-- 获取学生成绩按学期分组（用于绩点趋势） -->
+    <select id="getScoresBySemester" resultType="java.util.HashMap">
+        SELECT c.semester, ROUND(AVG(ss.score), 2) AS avg_score
+        FROM student_score ss
+                 JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+          AND c.semester IS NOT NULL
+        GROUP BY c.semester
+        ORDER BY c.semester
+    </select>
+
+    <!-- ==================== 成绩对比柱状图 ==================== -->
+
+    <!-- 获取各科成绩详情（用于成绩对比柱状图） -->
+    <select id="getScoreDetail" resultType="java.util.HashMap">
+        SELECT c.name AS course_name,
+               ss.usual_score,
+               ss.final_score,
+               ss.score
+        FROM student_score ss
+                 JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = #{studentId}
+          AND ss.status = 1
+        ORDER BY ss.create_time DESC
+            LIMIT 6
+    </select>
+
+    <!-- ==================== 考勤统计 ==================== -->
+
+    <!-- 统计本月考勤率 -->
+    <select id="calculateMonthlyAttendanceRate" resultType="java.math.BigDecimal">
+        SELECT ROUND(
+                       COUNT(CASE WHEN ar.status = 1 THEN 1 END) * 100.0 / COUNT(*),
+                       2
+               ) AS rate
+        FROM attendance_record ar
+                 JOIN attendance_session a_s ON ar.session_id = a_s.id
+        WHERE ar.student_id = #{studentId}
+          AND a_s.session_date &gt;= DATE_FORMAT(NOW(), '%Y-%m-01')
+          AND a_s.session_date &lt;= LAST_DAY(NOW())
+    </select>
+
+    <!-- 获取月度考勤统计（近6个月） -->
+    <select id="getMonthlyAttendance" resultType="java.util.HashMap">
+        SELECT DATE_FORMAT(a_s.session_date, '%Y-%m') AS month,
+               ROUND(
+                   COUNT(CASE WHEN ar.status = 1 THEN 1 END) * 100.0 / COUNT(*),
+                   2
+               ) AS rate
+        FROM attendance_record ar
+            JOIN attendance_session a_s ON ar.session_id = a_s.id
+        WHERE ar.student_id = #{studentId}
+          AND a_s.session_date &gt;= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+        GROUP BY DATE_FORMAT(a_s.session_date, '%Y-%m')
+        ORDER BY month
+    </select>
+
+    <!-- ==================== 学生信息 ==================== -->
+
+    <!-- 获取学生信息（含班级、专业、学院） -->
+    <select id="getStudentInfo" resultType="java.util.HashMap">
+        SELECT u.id,
+               u.username,
+               u.real_name,
+               u.gender,
+               u.email,
+               u.phone,
+               u.avatar,
+               u.class_id,
+               c.name AS class_name,
+               u.major_id,
+               m.name AS major_name,
+               u.college_id,
+               col.name AS college_name
+        FROM sys_user u
+                 LEFT JOIN org_class c ON u.class_id = c.id
+                 LEFT JOIN org_major m ON u.major_id = m.id
+                 LEFT JOIN org_college col ON u.college_id = col.id
+        WHERE u.id = #{userId}
+          AND u.role = 'student'
+    </select>
+
 </mapper>
