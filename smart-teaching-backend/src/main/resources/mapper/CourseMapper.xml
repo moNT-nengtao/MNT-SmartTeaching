@@ -104,7 +104,22 @@
         ORDER BY cs.day, cs.lesson
     </select>
 
-
-
+    <!--查询教师课程列表（含选课人数、评价数、评分）-->
+    <select id="selectTeacherCoursesWithStat" resultType="com.smartteaching.common.vo.evaluation.EvaluationTeacherVO$CourseItem">
+        SELECT
+            c.id,
+            c.name AS courseName,
+            c.semester,
+            COUNT(DISTINCT sr.student_id) AS studentCount,
+            COUNT(DISTINCT ce.id) AS evaluationCount,
+            IFNULL(ROUND(AVG(ce.score), 2), 0) AS avgScore
+        FROM course c
+                 LEFT JOIN selection_record sr ON sr.course_id = c.id AND sr.status = 1
+                 LEFT JOIN course_evaluation ce ON ce.course_id = c.id
+        WHERE c.teacher_id = #{teacherId}
+          AND c.status = 1
+        GROUP BY c.id, c.name, c.semester
+        ORDER BY c.id
+    </select>
 
 </mapper>

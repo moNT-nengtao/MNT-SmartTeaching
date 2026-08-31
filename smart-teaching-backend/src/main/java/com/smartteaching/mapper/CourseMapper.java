@@ -9,6 +9,7 @@ import com.smartteaching.common.dto.schedule.ScheduleSaveDTO;
 import com.smartteaching.common.vo.course.CourseQueryVO;
 import com.smartteaching.common.vo.course.CourseScheduleExportVO;
 import com.smartteaching.common.vo.course.CourseScheduleQueryVO;
+import com.smartteaching.common.vo.evaluation.EvaluationTeacherVO;
 import com.smartteaching.entity.course.Course;
 import com.smartteaching.entity.course.CourseSchedule;
 import org.apache.ibatis.annotations.Delete;
@@ -90,4 +91,11 @@ public interface CourseMapper extends BaseMapper<Course> {
      * @return
      */
     List<CourseScheduleExportVO> selectExportList(Long courseId, String courseName);
+
+    /**
+     * 查询教师课程列表（含选课人数、评价数、评分）
+     * @param teacherId
+     * @return
+     */
+    List<EvaluationTeacherVO.CourseItem> selectTeacherCoursesWithStat(@Param("teacherId") Long teacherId);
 }
