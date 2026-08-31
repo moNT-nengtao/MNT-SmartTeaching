@@ -214,6 +214,42 @@
         WHERE student_id = #{studentId} AND course_id = #{courseId}
     </delete>
 
+    <!-- 查询目标课程的排课信息 -->
+    <select id="selectCourseSchedules" resultType="com.smartteaching.common.vo.selection.SelectionConflictVO">
+        SELECT
+            cs.id AS scheduleId,
+            cs.course_id AS courseId,
+            c.name AS courseName,
+            cs.day AS `day`,
+            cs.lesson AS lesson,
+            cs.week AS weekJson,
+            cs.room AS classroom
+        FROM course_schedule cs
+                 INNER JOIN course c ON c.id = cs.course_id
+        WHERE cs.course_id = #{courseId}
+          AND cs.status = 1
+          AND c.status = 1
+    </select>
+
+    <!-- 查询学生已选课程的时间安排 -->
+    <select id="selectStudentSchedules" resultType="com.smartteaching.common.vo.selection.SelectionConflictVO">
+        SELECT
+            cs.id AS scheduleId,
+            cs.course_id AS courseId,
+            c.name AS courseName,
+            cs.day AS `day`,
+            cs.lesson AS lesson,
+            cs.week AS weekJson,
+            cs.room AS classroom
+        FROM course_schedule cs
+                 INNER JOIN course c ON c.id = cs.course_id
+                 INNER JOIN selection_record sr ON sr.course_id = cs.course_id
+        WHERE sr.student_id = #{studentId}
+          AND sr.status = 1
+          AND cs.status = 1
+          AND c.status = 1
+    </select>
+
 
     <!--学生退课-->
     <update id="studentDeleteCourses">

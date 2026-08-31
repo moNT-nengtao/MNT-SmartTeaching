@@ -3,6 +3,7 @@ package com.smartteaching.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.smartteaching.common.dto.selection.SelectionQueryDTO;
+import com.smartteaching.common.vo.selection.SelectionConflictVO;
 import com.smartteaching.common.vo.selection.SelectionMyCourseVO;
 import com.smartteaching.common.vo.selection.SelectionQueryVO;
 import com.smartteaching.common.vo.selection.SelectionStudentVO;
@@ -55,15 +56,7 @@ public interface SelectionMapper extends BaseMapper<SelectionConfig> {
     void studentSaveCourses(SelectionRecord selectionRecord);
     //判断是否已经有效选课
     boolean hasSelected(Long studentId, Long courseId);
-    //恢复旧退课记录
-    int recoverSelectCourse(Long studentId, Long courseId);
 
-    /**
-     * 学生退课
-     * @param courseId
-     * @param studentId
-     */
-    void studentDeleteCourses(Long courseId, Long studentId);
 
     /**
      * 我的已选课程
@@ -81,4 +74,18 @@ public interface SelectionMapper extends BaseMapper<SelectionConfig> {
      */
     @Delete("DELETE FROM selection_record WHERE course_id = #{courseId} AND student_id = #{studentId}")
     int deleteByCourseAndStudent(@Param("courseId") Long courseId, @Param("studentId") Long studentId);
+
+    /**
+     * 查询目标课程的排课信息
+     * @param courseId
+     * @return
+     */
+    List<SelectionConflictVO> selectCourseSchedules(@Param("courseId") Long courseId);
+
+    /**
+     * 查询学生已选课程的时间安排
+     * @param studentId
+     * @return
+     */
+    List<SelectionConflictVO> selectStudentSchedules(@Param("studentId") Long studentId);
 }

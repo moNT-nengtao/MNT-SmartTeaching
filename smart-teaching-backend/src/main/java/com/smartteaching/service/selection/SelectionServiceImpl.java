@@ -1,18 +1,17 @@
 package com.smartteaching.service.selection;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartteaching.common.constant.LessonSectionEnum;
 import com.smartteaching.common.constant.MessageConstant;
 import com.smartteaching.common.dto.selection.SelectionQueryDTO;
 import com.smartteaching.common.exception.BaseException;
 import com.smartteaching.common.result.PageResult;
 import com.smartteaching.common.utils.WeekUtil;
-import com.smartteaching.common.vo.selection.SelectionConfigQueryVO;
-import com.smartteaching.common.vo.selection.SelectionMyCourseVO;
-import com.smartteaching.common.vo.selection.SelectionQueryVO;
-import com.smartteaching.common.vo.selection.SelectionStudentVO;
+import com.smartteaching.common.vo.selection.*;
 import com.smartteaching.entity.course.Course;
 import com.smartteaching.entity.score.Score;
 import com.smartteaching.entity.selection.SelectionConfig;
@@ -198,6 +197,16 @@ public class SelectionServiceImpl implements SelectionService{
             throw new BaseException("课程已不存在");
         }
 
+        // 时间冲突校验
+        List<String> conflicts = checkTimeConflict(studentId, courseId);
+        if (!conflicts.isEmpty()) {
+            String msg = String.join("；", conflicts.subList(0, Math.min(3, conflicts.size())));
+            if (conflicts.size() > 3) {
+                msg += "；等" + conflicts.size() + "处冲突";
+            }
+            throw new BaseException("选课时间冲突：" + msg);
+        }
+
         // 插入新选课记录
         SelectionRecord selectionRecord = new SelectionRecord();
         selectionRecord.setCourseId(courseId);
@@ -278,4 +287,121 @@ public class SelectionServiceImpl implements SelectionService{
         pageResult.setPages(voiPage.getPages());
         return pageResult;
     }
+
+
+
+    /**
+     * 工具方法：校验学生选课是否存在时间冲突
+     * @param studentId 学生ID
+     * @param courseId  目标课程ID
+     * @return 冲突描述列表（若无冲突则返回空列表）
+     */
+    private List<String> checkTimeConflict(Long studentId, Long courseId) {
+        List<String> conflictMessages = new ArrayList<>();
+
+        // 1. 获取目标课程的排课信息
+        List<SelectionConflictVO> targetSchedules = selectionMapper.selectCourseSchedules(courseId);
+        if (targetSchedules == null || targetSchedules.isEmpty()) {
+            throw new BaseException("该课程暂无排课信息，无法选课");
+        }
+
+        // 2. 获取学生已选课程的排课信息
+        List<SelectionConflictVO> studentSchedules = selectionMapper.selectStudentSchedules(studentId);
+        if (studentSchedules == null || studentSchedules.isEmpty()) {
+            return conflictMessages;
+        }
+
+        // 3. 逐条检测冲突
+        for (SelectionConflictVO target : targetSchedules) {
+            String targetWeekJson = target.getWeekJson();
+
+            for (SelectionConflictVO existing : studentSchedules) {
+                // 同一星期 + 同一节次 → 可能冲突
+                if (!target.getDay().equals(existing.getDay())) {
+                    continue;
+                }
+                if (!target.getLesson().equals(existing.getLesson())) {
+                    continue;
+                }
+
+                // ★ 使用 WeekUtil.hasIntersection() 判断周次是否有重叠
+                if (WeekUtil.hasIntersection(targetWeekJson, existing.getWeekJson())) {
+                    String timeDesc = LessonSectionEnum.getTimeDesc(target.getLesson());
+                    String dayName = getDayName(target.getDay());
+
+                    // 计算具体重叠周次（用于更精确的提示）
+                    String overlapDesc = getOverlapRange(targetWeekJson, existing.getWeekJson());
+
+                    conflictMessages.add(String.format(
+                            "与【%s】在周%s 第%d节(%s) 冲突，重叠周次：%s",
+                            existing.getCourseName(),
+                            dayName,
+                            target.getLesson(),
+                            timeDesc,
+                            overlapDesc
+                    ));
+                }
+            }
+        }
+
+        return conflictMessages;
+    }
+
+    /**
+     * 获取星期名称（1→一, 2→二, ...）
+     */
+    private String getDayName(Integer day) {
+        if (day == null) return "未知";
+        String[] names = {"", "一", "二", "三", "四", "五", "六", "日"};
+        if (day >= 1 && day <= 7) {
+            return names[day];
+        }
+        return "未知";
+    }
+
+    /**
+     * 获取两个周次JSON的重叠范围字符串
+     */
+    private String getOverlapRange(String json1, String json2) {
+        if (json1 == null || json2 == null || json1.isEmpty() || json2.isEmpty()) {
+            return "";
+        }
+
+        // 解析为整数列表
+        List<Integer> list1 = parseJsonToIntList(json1);
+        List<Integer> list2 = parseJsonToIntList(json2);
+
+        if (list1.isEmpty() || list2.isEmpty()) {
+            return "";
+        }
+
+        // 计算交集
+        Set<Integer> set1 = new HashSet<>(list1);
+        List<Integer> overlap = new ArrayList<>();
+        for (Integer week : list2) {
+            if (set1.contains(week)) {
+                overlap.add(week);
+            }
+        }
+        Collections.sort(overlap);
+
+        // 转换为JSON再调用
+        String overlapJson = JSON.toJSONString(overlap);
+        return WeekUtil.jsonToRangeStr(overlapJson);
+    }
+
+    /**
+     * 解析JSON数组为整数列表
+     */
+    private List<Integer> parseJsonToIntList(String weekJson) {
+        if (weekJson == null || weekJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return JSON.parseArray(weekJson, Integer.class);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
 }

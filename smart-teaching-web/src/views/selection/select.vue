@@ -39,7 +39,7 @@
                 <div class="rate-wrap">
                   <el-rate
                     v-if="course.avgScore != null"
-                    :model-value="course.avgScore"
+                    :model-value="Number(course.avgScore).toFixed(1)"
                     disabled
                     show-score
                     text-color="#ff9900"

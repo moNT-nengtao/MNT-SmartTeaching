@@ -2,6 +2,8 @@ package com.smartteaching.common.vo.selection;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * @ClassName SelectionQueryVO
  * @Description 选课大厅课程返回VO
@@ -33,4 +35,39 @@ public class SelectionQueryVO {
     private Boolean isSelected;
     /** 剩余名额（可直接返回，前端也可计算） */
     private Integer remaining;
+
+    /**
+     * 授课能力
+     */
+    private BigDecimal teachingAbility;
+
+    /**
+     * 课堂氛围
+     */
+    private BigDecimal classAtmosphere;
+
+    /**
+     * 知识讲解清晰度
+     */
+    private BigDecimal knowledgeClarity;
+
+    /**
+     * 作业批改反馈
+     */
+    private BigDecimal homeworkFeedback;
+
+    /**
+     * 答疑服务
+     */
+    private BigDecimal qaService;
+
+    /**
+     * 最新评价内容
+     */
+    private String latestComment;
+
+    /**
+     * 评价人数
+     */
+    private Integer evaluationCount;
 }
