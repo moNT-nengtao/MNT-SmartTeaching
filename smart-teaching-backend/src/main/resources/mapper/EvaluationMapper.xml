@@ -4,4 +4,55 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.EvaluationMapper">
 
+    <!-- 查询学生可评价课程列表（含评价状态、成绩状态） -->
+    <select id="selectEvaluableCourses" resultType="com.smartteaching.common.vo.evaluation.EvaluationCourseVO">
+        SELECT
+            c.id,
+            c.name AS courseName,
+            u.real_name AS teacherName,
+            c.semester,
+            IF(ce.course_id IS NOT NULL, 1, 0) AS isEvaluated,
+            IF(ce.course_id IS NULL AND ss.course_id IS NOT NULL, 1, 0) AS canEvaluate
+        FROM selection_record sr
+                 INNER JOIN course c ON c.id = sr.course_id
+                 INNER JOIN sys_user u ON u.id = c.teacher_id
+                 LEFT JOIN course_evaluation ce ON ce.course_id = c.id AND ce.student_id = sr.student_id
+                 LEFT JOIN student_score ss ON ss.course_id = c.id
+            AND ss.student_id = sr.student_id
+            AND ss.score IS NOT NULL
+            AND ss.status = 1
+        WHERE sr.student_id = #{studentId}
+          AND sr.status = 1
+          AND c.status = 1
+    </select>
+
+    <!-- 教师评分榜单 -->
+    <select id="selectTeacherRanking" resultType="com.smartteaching.common.vo.evaluation.EvaluationTeacherRankingVO">
+        SELECT
+        u.id AS teacherId,
+        u.real_name AS teacherName,
+        oc.name AS collegeName,
+        COUNT(DISTINCT c.id) AS courseCount,
+        COUNT(DISTINCT ce.id) AS evaluationCount,
+        IFNULL(ROUND(AVG(ce.score), 2), 0) AS avgScore,
+        IFNULL(ROUND(AVG(ce.teaching_ability), 2), 0) AS teachingAbility,
+        IFNULL(ROUND(AVG(ce.class_atmosphere), 2), 0) AS classAtmosphere,
+        IFNULL(ROUND(AVG(ce.knowledge_clarity), 2), 0) AS knowledgeClarity,
+        IFNULL(ROUND(AVG(ce.homework_feedback), 2), 0) AS homeworkFeedback,
+        IFNULL(ROUND(AVG(ce.qa_service), 2), 0) AS qaService
+        FROM sys_user u
+        INNER JOIN course c ON c.teacher_id = u.id AND c.status = 1
+        LEFT JOIN org_college oc ON u.college_id = oc.id
+        LEFT JOIN course_evaluation ce ON ce.course_id = c.id
+        WHERE u.role = 'teacher'
+        AND u.status = 1
+        <if test="collegeId != null and collegeId != ''">
+            AND u.college_id = #{collegeId}
+        </if>
+        <if test="subject != null and subject != ''">
+            AND c.name LIKE CONCAT('%', #{subject}, '%')
+        </if>
+        GROUP BY u.id, u.real_name, oc.name
+        ORDER BY avgScore DESC, evaluationCount DESC
+    </select>
 </mapper>

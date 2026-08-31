@@ -9,7 +9,7 @@ export function submitEvaluation(data) {
   })
 }
 
-// 查看评价（教师看自己课程的）
+// 按课程查询评价列表（教师）
 export function getEvaluationList(params) {
   return request({
     url: '/evaluation/list',
@@ -27,10 +27,10 @@ export function getTeacherRanking(params) {
   })
 }
 
-// 评价统计
-export function getEvaluationStats(courseId) {
+// 教师评价仪表盘
+export function getEvaluationDashboard() {
   return request({
-    url: `/evaluation/stats/${courseId}`,
+    url: '/evaluation/dashboard',
     method: 'get'
   })
 }

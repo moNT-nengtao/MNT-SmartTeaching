@@ -9,30 +9,34 @@
 
       <!-- 前三名展示 -->
       <div v-if="rankingList.length >= 3" class="top-three mb-20">
+        <!-- 第2名 -->
         <div class="top-item second">
           <div class="top-rank">2</div>
-          <el-avatar :size="60">{{ rankingList[1]?.teacherName?.charAt(0) }}</el-avatar>
-          <div class="top-name">{{ rankingList[1]?.teacherName }}</div>
-          <div class="top-score">{{ rankingList[1]?.avgScore }} 分</div>
+          <el-avatar :size="60">{{ rankingList[1]?.teacherName?.charAt(0) || '?' }}</el-avatar>
+          <div class="top-name">{{ rankingList[1]?.teacherName || '--' }}</div>
+          <div class="top-score">{{ rankingList[1]?.avgScore != null ? rankingList[1].avgScore + ' 分' : '--' }}</div>
         </div>
+        <!-- 第1名 -->
         <div class="top-item first">
           <div class="top-rank"><el-icon :size="28"><Trophy /></el-icon></div>
-          <el-avatar :size="72">{{ rankingList[0]?.teacherName?.charAt(0) }}</el-avatar>
-          <div class="top-name">{{ rankingList[0]?.teacherName }}</div>
-          <div class="top-score">{{ rankingList[0]?.avgScore }} 分</div>
+          <el-avatar :size="72">{{ rankingList[0]?.teacherName?.charAt(0) || '?' }}</el-avatar>
+          <div class="top-name">{{ rankingList[0]?.teacherName || '--' }}</div>
+          <div class="top-score">{{ rankingList[0]?.avgScore != null ? rankingList[0].avgScore + ' 分' : '--' }}</div>
         </div>
+        <!-- 第3名 -->
         <div class="top-item third">
           <div class="top-rank">3</div>
-          <el-avatar :size="60">{{ rankingList[2]?.teacherName?.charAt(0) }}</el-avatar>
-          <div class="top-name">{{ rankingList[2]?.teacherName }}</div>
-          <div class="top-score">{{ rankingList[2]?.avgScore }} 分</div>
+          <el-avatar :size="60">{{ rankingList[2]?.teacherName?.charAt(0) || '?' }}</el-avatar>
+          <div class="top-name">{{ rankingList[2]?.teacherName || '--' }}</div>
+          <div class="top-score">{{ rankingList[2]?.avgScore != null ? rankingList[2].avgScore + ' 分' : '--' }}</div>
         </div>
       </div>
 
-      <el-table :data="rankingList.slice(3)" v-loading="loading" border stripe>
+      <!-- 表格：排名从1开始 -->
+      <el-table :data="rankingList" v-loading="loading" border stripe>
         <el-table-column label="排名" width="80" align="center">
           <template #default="{ $index }">
-            <el-tag>{{ $index + 4 }}</el-tag>
+            <el-tag>{{ $index + 1 }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="teacherName" label="教师姓名" width="120" />
@@ -40,15 +44,22 @@
         <el-table-column prop="courseCount" label="授课数" width="100" align="center" />
         <el-table-column prop="evaluationCount" label="评价数" width="100" align="center" />
         <el-table-column label="综合评分" width="200">
-          <template #default="{ row }">
-            <el-progress :percentage="row.avgScore * 20" :color="scoreColor(row.avgScore)" :stroke-width="14" />
-            <span style="margin-left: 8px; font-weight: 600">{{ row.avgScore }}</span>
-          </template>
-        </el-table-column>
+  <template #default="{ row }">
+    <template v-if="row.avgScore != null && row.avgScore > 0">
+      <el-progress 
+        :percentage="Number((row.avgScore * 20).toFixed(1))" 
+        :color="scoreColor(row.avgScore)" 
+        :stroke-width="14" 
+      />
+      <span style="margin-left: 8px; font-weight: 600">{{ row.avgScore }}</span>
+    </template>
+    <span v-else style="color: #909399">暂无评分</span>
+  </template>
+</el-table-column>
         <el-table-column label="各维度" min-width="300">
           <template #default="{ row }">
             <el-tag v-for="dim in dimensions" :key="dim.key" size="small" class="mr-5">
-              {{ dim.label }}: {{ row[dim.key] }}
+              {{ dim.label }}: {{ row[dim.key] != null && row[dim.key] > 0 ? row[dim.key] : '--' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -89,8 +100,14 @@ const scoreColor = (score) => {
 const fetchList = async () => {
   loading.value = true
   try {
-    const res = await getTeacherRanking(searchParams)
+    const params = {}
+    if (searchParams.collegeId) params.collegeId = searchParams.collegeId
+    if (searchParams.subject) params.subject = searchParams.subject
+
+    const res = await getTeacherRanking(params)
     rankingList.value = res.data || []
+  } catch (e) {
+    console.error('获取教师榜单失败:', e)
   } finally {
     loading.value = false
   }

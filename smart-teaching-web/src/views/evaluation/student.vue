@@ -8,11 +8,11 @@
         <el-table-column prop="courseName" label="课程名称" min-width="150" />
         <el-table-column prop="teacherName" label="授课教师" width="100" />
         <el-table-column prop="semester" label="学期" width="140" />
-        <el-table-column label="评价状态" width="100">
+        <el-table-column label="评价状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.isEvaluated ? 'success' : 'warning'" size="small">
-              {{ row.isEvaluated ? '已评价' : '待评价' }}
-            </el-tag>
+            <el-tag v-if="row.isEvaluated" type="success" size="small">已评价</el-tag>
+            <el-tag v-else-if="!row.canEvaluate" type="info" size="small">成绩未出</el-tag>
+            <el-tag v-else type="warning" size="small">待评价</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -20,10 +20,10 @@
             <el-button
               link
               type="primary"
-              :disabled="row.isEvaluated"
+              :disabled="!row.canEvaluate"
               @click="handleEvaluate(row)"
             >
-              {{ row.isEvaluated ? '已评价' : '去评价' }}
+              {{ row.isEvaluated ? '已评价' : row.canEvaluate ? '去评价' : '成绩未出' }}
             </el-button>
           </template>
         </el-table-column>
@@ -59,9 +59,6 @@
             show-word-limit
           />
         </el-form-item>
-        <el-form-item label="匿名提交">
-          <el-switch v-model="form.isAnonymous" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -91,12 +88,15 @@ const form = reactive({
   knowledgeClarity: 5,
   homeworkFeedback: 5,
   qaService: 5,
-  comment: '',
-  isAnonymous: true
+  comment: ''
 })
 
 const rules = {
   teachingAbility: [{ required: true, message: '请评分', trigger: 'change' }],
+  classAtmosphere: [{ required: true, message: '请评分', trigger: 'change' }],
+  knowledgeClarity: [{ required: true, message: '请评分', trigger: 'change' }],
+  homeworkFeedback: [{ required: true, message: '请评分', trigger: 'change' }],
+  qaService: [{ required: true, message: '请评分', trigger: 'change' }],
   comment: [{ required: true, message: '请填写文字评价', trigger: 'blur' }]
 }
 
@@ -105,6 +105,8 @@ const fetchCourses = async () => {
   try {
     const res = await getEvaluableCourses()
     courseList.value = res.data || []
+  } catch (e) {
+    console.error('获取可评价课程失败:', e)
   } finally {
     loading.value = false
   }
@@ -120,10 +122,14 @@ const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    await submitEvaluation(form)
-    ElMessage.success('评价提交成功，感谢你的反馈！')
-    dialogVisible.value = false
-    fetchCourses()
+    try {
+      await submitEvaluation(form)
+      ElMessage.success('评价提交成功，感谢你的反馈！')
+      dialogVisible.value = false
+      fetchCourses()
+    } catch (e) {
+      ElMessage.error('提交失败，请重试')
+    }
   })
 }
 
