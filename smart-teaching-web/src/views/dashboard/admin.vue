@@ -32,9 +32,7 @@
 import { ref, onMounted } from 'vue'
 import ChartCard from '@/components/ChartCard.vue'
 import { getAdminDashboard } from '@/api/dashboard'
-
 const loading = ref(false)
-
 const statCards = ref([
   { label: '班级总数', value: '--', color: '#409eff' },
   { label: '教师人数', value: '--', color: '#67c23a' },
@@ -43,11 +41,9 @@ const statCards = ref([
   { label: '选课率', value: '--', color: '#909399' },
   { label: '考勤合格率', value: '--', color: '#409eff' }
 ])
-
 const barOption = ref({})
 const pieOption = ref({})
 const lineOption = ref({})
-
 const fetchData = async () => {
   loading.value = true
   try {
@@ -63,15 +59,20 @@ const fetchData = async () => {
     statCards.value[4].value = cards.selectionRate + '%'
     statCards.value[5].value = cards.attendanceRate + '%'
     
-    // 更新柱状图（学院学生分布）
+    // 更新柱状图（学院学生分布） 补充 type:bar、tooltip、legend
     barOption.value = {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['学生数量'] },
       xAxis: { data: data.collegeStudentDistribution.categories },
       yAxis: { name: '人数' },
-      series: data.collegeStudentDistribution.series
+      series: data.collegeStudentDistribution.series.map(item=>{
+        return {...item, type:'bar'}
+      })
     }
     
     // 更新饼图（师生比例）
     pieOption.value = {
+      tooltip: { trigger: 'item' },
       series: [{
         type: 'pie',
         data: data.teacherStudentRatio.categories.map((name, index) => ({
@@ -81,23 +82,27 @@ const fetchData = async () => {
       }]
     }
     
-    // 更新折线图（近7日活跃度）
+    // 更新折线图（近7日活跃度）补充 type:line
     lineOption.value = {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['活跃用户数'] },
       xAxis: { data: data.weeklyActivity.categories },
       yAxis: { name: '活跃人数' },
-      series: data.weeklyActivity.series
+      series: data.weeklyActivity.series.map(item=>{
+        return {...item, type:'line'}
+      })
     }
   } catch (e) {
-    // 错误已处理
+    console.error('仪表盘加载异常', e)
   } finally {
     loading.value = false
   }
 }
-
 onMounted(() => {
   fetchData()
 })
 </script>
+
 
 <style scoped>
 .stat-card {
