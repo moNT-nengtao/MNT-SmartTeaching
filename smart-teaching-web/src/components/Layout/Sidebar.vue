@@ -79,6 +79,7 @@ const menuList = computed(() => {
         ]
       },
       { path: '/selection/manage', title: '选课管理', icon: 'Tickets' },
+      { path: '/homework/teacher', title: '作业管理', icon: 'Files' },
       { path: '/score/stats', title: '成绩统计', icon: 'TrendCharts' },
       { path: '/evaluation/ranking', title: '教师评分榜', icon: 'Trophy' }
     )
@@ -87,6 +88,7 @@ const menuList = computed(() => {
   // 教师菜单
   if (role === 'teacher') {
     menus.push(
+      { path: '/homework/teacher', title: '作业管理', icon: 'Files' },
       { path: '/score/entry', title: '成绩录入', icon: 'EditPen' },
       { path: '/attendance/teacher', title: '课堂签到', icon: 'CircleCheck' },
       { path: '/evaluation/teacher', title: '教学评价', icon: 'Star' }
@@ -107,6 +109,7 @@ const menuList = computed(() => {
         ]
       },
       { path: '/score/query', title: '成绩查询', icon: 'Document' },
+      { path: '/homework/student', title: '我的作业', icon: 'Files' },
       { path: '/attendance/student', title: '我的考勤', icon: 'Clock' },
       { path: '/evaluation/student', title: '课程评价', icon: 'ChatDotRound' }
     )

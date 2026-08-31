@@ -273,20 +273,30 @@ CREATE TABLE ai_message (
 ) COMMENT='AI消息表';
 
 -- =====================================================
--- 10. 课程评价模块
+-- 10. 课程评价模块（含各维度打分）
 -- =====================================================
+DROP TABLE IF EXISTS course_evaluation;
 CREATE TABLE course_evaluation (
                                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                                   course_id BIGINT NOT NULL,
-                                   teacher_id BIGINT NOT NULL,
-                                   student_id BIGINT NOT NULL,
-                                   score DECIMAL(3,2) NOT NULL COMMENT '评分',
-                                   content TEXT DEFAULT NULL,
+                                   course_id BIGINT NOT NULL COMMENT '课程ID',
+                                   teacher_id BIGINT NOT NULL COMMENT '教师ID',
+                                   student_id BIGINT NOT NULL COMMENT '学生ID',
+                                   score DECIMAL(3,2) NOT NULL COMMENT '综合评分（1-5分）',
+
+    -- 各维度打分（1-5分）
+                                   teaching_ability DECIMAL(3,2) DEFAULT NULL COMMENT '授课能力评分',
+                                   class_atmosphere DECIMAL(3,2) DEFAULT NULL COMMENT '课堂氛围评分',
+                                   knowledge_clarity DECIMAL(3,2) DEFAULT NULL COMMENT '知识讲解清晰度评分',
+                                   homework_feedback DECIMAL(3,2) DEFAULT NULL COMMENT '作业批改反馈评分',
+                                   qa_service DECIMAL(3,2) DEFAULT NULL COMMENT '答疑服务评分',
+
+                                   content TEXT DEFAULT NULL COMMENT '评价内容',
                                    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                    INDEX idx_course_id (course_id),
                                    INDEX idx_teacher_id (teacher_id),
                                    INDEX idx_student_id (student_id)
 ) COMMENT='课程评价表';
+
 
 -- =====================================================
 -- 11. 学业预警模块
@@ -318,6 +328,47 @@ CREATE TABLE dashboard_stat (
                                 INDEX idx_stat_type (stat_type),
                                 INDEX idx_target_date (target_date)
 ) COMMENT='仪表盘统计缓存表';
+
+-- =====================================================
+-- 13. 作业表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS homework (
+                                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                        course_id BIGINT NOT NULL COMMENT '课程ID',
+                                        teacher_id BIGINT NOT NULL COMMENT '发布教师ID',
+                                        title VARCHAR(255) NOT NULL COMMENT '作业标题',
+                                        content TEXT COMMENT '作业要求/内容',
+                                        attachment_url VARCHAR(500) DEFAULT NULL COMMENT '附件URL（可选）',
+                                        attachment_name VARCHAR(255) DEFAULT NULL COMMENT '附件原始文件名',
+                                        deadline DATETIME DEFAULT NULL COMMENT '截止时间',
+                                        status TINYINT NOT NULL DEFAULT 1 COMMENT '1=已发布,0=已撤销',
+                                        create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                        INDEX idx_course_id (course_id),
+                                        INDEX idx_teacher_id (teacher_id)
+) COMMENT='作业表';
+
+
+-- =====================================================
+-- 14. 作业提交表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS homework_submission (
+                                                   id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                                   homework_id BIGINT NOT NULL COMMENT '作业ID',
+                                                   student_id BIGINT NOT NULL COMMENT '学生ID',
+                                                   content TEXT COMMENT '提交内容',
+                                                   attachment_url VARCHAR(500) DEFAULT NULL COMMENT '提交附件URL',
+                                                   attachment_name VARCHAR(255) DEFAULT NULL COMMENT '附件原始文件名',
+                                                   score DECIMAL(5,2) DEFAULT NULL COMMENT '成绩（NULL=未批改）',
+                                                   comment VARCHAR(500) DEFAULT NULL COMMENT '教师评语',
+                                                   submit_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                                   grade_time DATETIME DEFAULT NULL COMMENT '批改时间',
+                                                   status TINYINT NOT NULL DEFAULT 1 COMMENT '1=已提交,0=已撤销',
+                                                   UNIQUE KEY uk_homework_student (homework_id, student_id),
+                                                   INDEX idx_homework_id (homework_id),
+                                                   INDEX idx_student_id (student_id)
+) COMMENT='作业提交表';
+
 
 
 -- =====================================================
@@ -572,14 +623,57 @@ INSERT INTO ai_message(id, session_id, sender, content) VALUES
                                                             (5, 3, 0, '讲解进程时间片轮转调度'),
                                                             (6, 3, 1, '时间片轮转将CPU时间切分成时间片，轮流分配给就绪队列进程……');
 
--- 课程评价
-INSERT INTO course_evaluation(id, course_id, teacher_id, student_id, score, content) VALUES
-                                                                                         (1, 1, 2, 6, 4.75, '课程讲解清晰，案例丰富，收获很大。'),
-                                                                                         (2, 2, 3, 6, 4.20, '算法课难度偏高，希望多一点实操演示。'),
-                                                                                         (3, 1, 2, 7, 4.80, '老师讲课节奏很好，作业布置合理。'),
-                                                                                         (4, 4, 2, 9, 3.60, '框架内容难度大，希望增加更多课堂练习。'),
-                                                                                         (5, 5, 3, 18, 3.20, '理论较多，希望补充代码演示。');
 
+-- 课程评价数据
+-- =====================================================
+INSERT INTO course_evaluation (
+    id, course_id, teacher_id, student_id, score,
+    teaching_ability, class_atmosphere, knowledge_clarity, homework_feedback, qa_service,
+    content
+) VALUES
+-- 课程1: Java程序设计 (teacher_id=2) 的评价
+(1, 1, 2, 6, 4.80, 5.0, 4.5, 5.0, 4.5, 5.0, '课程讲解清晰，案例丰富，收获很大。'),
+(2, 1, 2, 7, 4.60, 4.5, 4.5, 4.5, 4.5, 5.0, '老师讲课节奏很好，作业布置合理。'),
+(3, 1, 2, 8, 4.20, 4.0, 4.0, 4.5, 4.0, 4.5, '内容充实，但语速稍快。'),
+(4, 1, 2, 9, 4.90, 5.0, 5.0, 5.0, 4.5, 5.0, '非常优秀的老师，讲解深入浅出！'),
+(5, 1, 2, 10, 3.80, 4.0, 3.5, 4.0, 3.5, 4.0, '课程难度较大，希望多增加练习时间。'),
+(6, 1, 2, 11, 4.00, 4.0, 4.0, 4.0, 4.0, 4.0, '整体不错，但期末复习指导可以更充分。'),
+(7, 1, 2, 12, 4.50, 4.5, 4.5, 4.5, 4.5, 4.5, '认真负责，教学水平高。'),
+(8, 1, 2, 13, 4.70, 5.0, 4.5, 4.5, 4.5, 5.0, '非常耐心，课后答疑很及时。'),
+(9, 1, 2, 15, 4.00, 4.0, 4.0, 4.0, 4.0, 4.0, '课程内容实用，建议增加更多实战案例。'),
+
+-- 课程2: 数据结构与算法 (teacher_id=3) 的评价
+(10, 2, 3, 6, 4.40, 4.5, 4.0, 4.5, 4.5, 4.5, '算法课难度偏高，希望多一点实操演示。'),
+(11, 2, 3, 8, 4.20, 4.0, 4.0, 4.5, 4.5, 4.0, '理论讲解扎实，但代码演示略少。'),
+(12, 2, 3, 10, 3.60, 3.5, 3.5, 4.0, 3.5, 3.5, '内容较难，需要更多基础铺垫。'),
+(13, 2, 3, 12, 4.00, 4.0, 4.0, 4.0, 4.0, 4.0, '讲解清晰，但进度稍快。'),
+(14, 2, 3, 14, 3.80, 4.0, 3.5, 4.0, 3.5, 4.0, '希望增加习题课和答疑时间。'),
+(15, 2, 3, 16, 4.60, 4.5, 4.5, 4.5, 4.5, 5.0, '老师讲解很透彻，收获很大！'),
+(16, 2, 3, 17, 3.50, 3.5, 3.5, 3.5, 3.5, 3.5, '课程难度太大，建议分层次教学。'),
+
+-- 课程3: 计算机网络 (teacher_id=2) 的评价
+(17, 3, 2, 7, 4.30, 4.5, 4.0, 4.5, 4.0, 4.5, '网络协议讲解清晰，实验课很有帮助。'),
+(18, 3, 2, 11, 4.60, 4.5, 4.5, 4.5, 4.5, 5.0, '老师专业知识渊博，课堂生动。'),
+(19, 3, 2, 13, 3.80, 4.0, 3.5, 4.0, 4.0, 3.5, '内容偏向理论，希望增加更多实际案例。'),
+(20, 3, 2, 15, 4.10, 4.0, 4.0, 4.0, 4.5, 4.0, '整体不错，网络实验设备可以更新。'),
+
+-- 课程4: SpringBoot框架开发 (teacher_id=2) 的评价
+(21, 4, 2, 9, 4.80, 5.0, 4.5, 5.0, 5.0, 4.5, '框架掌握熟练，项目实战很有帮助！'),
+(22, 4, 2, 10, 4.20, 4.0, 4.0, 4.5, 4.5, 4.0, '框架内容难度大，希望增加更多课堂练习。'),
+(23, 4, 2, 14, 3.80, 4.0, 3.5, 4.0, 4.0, 3.5, '内容较新，希望补充更多文档和资料。'),
+(24, 4, 2, 16, 4.50, 4.5, 4.5, 4.5, 4.5, 4.5, '老师实战经验丰富，课程很实用！'),
+
+-- 课程5: 操作系统 (teacher_id=3) 的评价
+(25, 5, 3, 18, 3.60, 3.5, 3.5, 4.0, 3.5, 3.5, '理论较多，希望补充代码演示和案例。'),
+(26, 5, 3, 19, 4.00, 4.0, 4.0, 4.0, 4.0, 4.0, '讲解细致，但课堂互动可以更多。'),
+(27, 5, 3, 20, 4.20, 4.5, 4.0, 4.5, 4.0, 4.0, '内容体系完整，实验指导很详细。'),
+
+-- 课程6: 机械制图 (teacher_id=4) 的评价
+(28, 6, 4, 18, 4.20, 4.5, 4.0, 4.0, 4.5, 4.0, 'CAD制图讲解实用，但软件操作演示可更多。'),
+(29, 6, 4, 20, 4.00, 4.0, 4.0, 4.0, 4.0, 4.0, '制图规范讲解清楚，希望增加更多绘图练习。'),
+
+-- 课程7: 高等数学进阶 (teacher_id=5) 的评价
+(30, 7, 5, 19, 4.70, 5.0, 4.5, 5.0, 4.0, 4.5, '数学功底深厚，讲解逻辑清晰，非常受益！');
 -- 学业预警
 INSERT INTO warning_record(id, user_id, warning_type, level, title, content, status) VALUES
                                                                                          (1, 11, 'score', 2, '成绩预警', 'Java程序设计课程成绩55分，建议加强课后练习，及时向老师请教。', 1),
@@ -591,6 +685,87 @@ INSERT INTO warning_record(id, user_id, warning_type, level, title, content, sta
 INSERT INTO dashboard_stat(id, stat_type, target_date, target_id, value) VALUES
                                                                              (1, 'user_count', '2026-08-18', NULL, '{"admin":1,"teacher":4,"student":20}'),
                                                                              (2, 'course_count', '2026-08-18', NULL, '{"total":7,"open":7}');
+
+-- =====================================================
+-- 作业表数据 (homework)
+-- =====================================================
+INSERT INTO homework (id, course_id, teacher_id, title, content, attachment_url, attachment_name, deadline, status) VALUES
+                                                                                                                        (1, 1, 2, 'Java程序设计-第一次作业', '完成一个简单的学生管理系统，包含增删改查功能，使用SpringBoot+MyBatis实现。', '/homework/attachments/hw1_springboot_student.docx', 'SpringBoot学生管理系统作业要求.docx', '2026-08-20 23:59:59', 1),
+                                                                                                                        (2, 1, 2, 'Java程序设计-第二次作业', '实现一个简易的图书管理系统，包含RESTful API设计，使用JPA操作数据库。', '/homework/attachments/hw2_springboot_book.pdf', '图书管理系统API设计作业.pdf', '2026-09-05 23:59:59', 1),
+                                                                                                                        (3, 2, 3, '数据结构-线性表作业', '实现ArrayList和LinkedList，并比较两者在增删改查操作上的性能差异。', '/homework/attachments/hw3_list.pdf', '线性表实现作业.pdf', '2026-08-22 23:59:59', 1),
+                                                                                                                        (4, 2, 3, '数据结构-树与图作业', '实现二叉树的三种遍历方式（前序、中序、后序）以及图的邻接表表示和广度优先遍历。', '/homework/attachments/hw4_tree_graph.pdf', '树与图作业.pdf', '2026-09-08 23:59:59', 1),
+                                                                                                                        (5, 3, 2, '计算机网络-协议分析作业', '使用Wireshark抓包分析TCP三次握手和HTTP请求响应过程，提交分析报告。', '/homework/attachments/hw5_network.docx', '网络协议分析作业.docx', '2026-08-25 23:59:59', 1),
+                                                                                                                        (6, 4, 2, 'SpringBoot-整合MyBatis作业', '完成SpringBoot整合MyBatis-Plus的CRUD操作，包含分页查询和条件构造器使用。', '/homework/attachments/hw6_mybatis.pdf', 'SpringBoot整合MyBatis作业.pdf', '2026-09-10 23:59:59', 1),
+                                                                                                                        (7, 5, 3, '操作系统-进程调度作业', '模拟实现FCFS、SJF、时间片轮转三种进程调度算法，输出调度序列和等待时间。', '/homework/attachments/hw7_scheduler.pdf', '进程调度算法作业.pdf', '2026-09-12 23:59:59', 1),
+                                                                                                                        (8, 6, 4, '机械制图-零件图绘制作业', '根据提供的三视图，用CAD绘制完整的零件图，标注尺寸和技术要求。', '/homework/attachments/hw8_cad.dwg', '零件图绘制作业.dwg', '2026-09-15 23:59:59', 1),
+                                                                                                                        (9, 7, 5, '高等数学-多元微积分作业', '完成第八章多元函数微分学课后习题1-20题，需提交详细解题步骤。', '/homework/attachments/hw9_math.pdf', '多元微积分作业.pdf', '2026-09-18 23:59:59', 1),
+                                                                                                                        (10, 1, 2, 'Java程序设计-第三次作业', '实现一个简单的在线购物车系统，包含用户登录、商品浏览、加入购物车、下单等功能。', '/homework/attachments/hw10_shopping.pdf', '购物车系统作业.pdf', '2026-09-20 23:59:59', 1);
+
+-- =====================================================
+-- 作业提交表数据 (homework_submission)
+-- =====================================================
+INSERT INTO homework_submission (id, homework_id, student_id, content, attachment_url, attachment_name, score, comment, submit_time, grade_time, status) VALUES
+-- 作业1: Java程序设计-第一次作业 (homework_id=1)
+(1, 1, 6, '已完成学生管理系统的增删改查功能，使用SpringBoot+MyBatis+MySQL实现，包含单元测试。', '/submissions/hw1/s230101_student_system.zip', '学生管理系统源码.zip', 85.00, '功能完整，代码规范，建议增加异常处理。', '2026-08-18 14:20:00', '2026-08-21 09:30:00', 1),
+(2, 1, 7, '实现了学生管理，包含分页查询和条件搜索。', '/submissions/hw1/s230102_student_system.zip', '学生管理系统源码.zip', 78.00, '功能基本实现，但分页查询有bug需要修复。', '2026-08-19 10:15:00', '2026-08-21 09:35:00', 1),
+(3, 1, 8, '完成了所有CRUD操作，并补充了Swagger接口文档。', '/submissions/hw1/s230103_student_system.zip', '学生管理系统源码.zip', 90.00, '实现优秀，代码质量高，接口文档完善。', '2026-08-18 20:30:00', '2026-08-21 09:40:00', 1),
+(4, 1, 9, '实现增删改查功能，使用JPA操作数据库。', '/submissions/hw1/s230104_student_system.zip', '学生管理系统源码.zip', 82.00, '功能实现较好，但部分接口设计可优化。', '2026-08-19 16:45:00', '2026-08-21 09:45:00', 1),
+(5, 1, 10, '实现了基本的学生管理功能。', '/submissions/hw1/s230105_student_system.zip', '学生管理系统源码.zip', 65.00, '功能较简单，未完全覆盖所有要求，需加强练习。', '2026-08-20 08:00:00', '2026-08-21 09:50:00', 1),
+(6, 1, 11, '没有完全完成，只实现了查询和添加功能。', '/submissions/hw1/s230106_student_system.zip', '学生管理系统源码.zip', 45.00, '完成度不足，请课后补习并重新提交。', '2026-08-20 11:20:00', '2026-08-21 09:55:00', 1),
+(7, 1, 12, '实现了完整的增删改查，加入全局异常处理和日志记录。', '/submissions/hw1/s230201_student_system.zip', '学生管理系统源码.zip', 88.00, '实现较好，异常处理和日志记录为加分项。', '2026-08-18 15:00:00', '2026-08-21 10:00:00', 1),
+(8, 1, 13, '实现了基本的CRUD功能。', '/submissions/hw1/s230202_student_system.zip', '学生管理系统源码.zip', 75.00, '功能完整但代码结构可优化，注意分层设计。', '2026-08-19 13:20:00', '2026-08-21 10:05:00', 1),
+(9, 1, 15, '完成增删改查，并加入Redis缓存优化查询性能。', '/submissions/hw1/s230204_student_system.zip', '学生管理系统源码.zip', 80.00, 'Redis缓存使用正确，但需要考虑缓存一致性。', '2026-08-20 09:40:00', '2026-08-21 10:10:00', 1),
+(10, 1, 17, '只完成了查和删功能，增改功能未实现。', '/submissions/hw1/s230206_student_system.zip', '学生管理系统源码.zip', 30.00, '未按要求完成，请尽快补交。', '2026-08-20 22:00:00', '2026-08-21 10:15:00', 1),
+
+-- 作业2: Java程序设计-第二次作业 (homework_id=2)
+(11, 2, 6, '完成了图书管理系统的RESTful API，包含分页、过滤和排序功能。', '/submissions/hw2/s230101_book_api.zip', '图书管理系统API.zip', 87.00, 'API设计规范，文档齐全，建议补充集成测试。', '2026-09-03 14:00:00', '2026-09-06 08:30:00', 1),
+(12, 2, 7, '实现了图书的增删改查API。', '/submissions/hw2/s230102_book_api.zip', '图书管理系统API.zip', 72.00, '基础功能完整，但缺少参数校验和统一返回格式。', '2026-09-04 09:30:00', '2026-09-06 08:35:00', 1),
+(13, 2, 9, '设计规范的RESTful API，使用Spring Data JPA，包含分页和排序。', '/submissions/hw2/s230104_book_api.zip', '图书管理系统API.zip', 92.00, 'API设计优秀，代码简洁清晰。', '2026-09-03 20:00:00', '2026-09-06 08:40:00', 1),
+
+-- 作业3: 数据结构-线性表作业 (homework_id=3)
+(14, 3, 6, '实现了ArrayList和LinkedList，性能对比测试报告已附在文档中。', '/submissions/hw3/s230101_list.zip', '线性表实现源码.zip', 80.00, '实现正确，性能测试报告详细。', '2026-08-20 16:30:00', '2026-08-23 10:00:00', 1),
+(15, 3, 8, '实现了两种List，并完成了性能对比。', '/submissions/hw3/s230103_list.zip', '线性表实现源码.zip', 76.00, '实现基本正确，部分方法效率可优化。', '2026-08-21 08:20:00', '2026-08-23 10:05:00', 1),
+(16, 3, 10, '实现了ArrayList和LinkedList，但性能测试数据不完整。', '/submissions/hw3/s230105_list.zip', '线性表实现源码.zip', 60.00, '代码有部分bug，需要修复；性能测试需补充。', '2026-08-22 11:00:00', '2026-08-23 10:10:00', 1),
+(17, 3, 12, '完成了两种List的完整实现和详细性能对比分析。', '/submissions/hw3/s230201_list.zip', '线性表实现源码.zip', 85.00, '实现优秀，分析报告非常到位。', '2026-08-21 13:40:00', '2026-08-23 10:15:00', 1),
+(18, 3, 14, '实现了ArrayList和LinkedList。', '/submissions/hw3/s230203_list.zip', '线性表实现源码.zip', 68.00, '功能实现基本完整，但部分方法效率较低。', '2026-08-22 09:00:00', '2026-08-23 10:20:00', 1),
+
+-- 作业4: 数据结构-树与图作业 (homework_id=4)
+(19, 4, 6, '实现二叉树三种遍历和图邻接表BFS。', '/submissions/hw4/s230101_tree_graph.zip', '树与图实现源码.zip', 78.00, '实现正确，建议补充迭代方式的遍历实现。', '2026-09-06 10:00:00', '2026-09-09 14:00:00', 1),
+(20, 4, 8, '完成二叉树的递归遍历和图邻接表表示，BFS实现正确。', '/submissions/hw4/s230103_tree_graph.zip', '树与图实现源码.zip', 82.00, '实现较好，代码规范。', '2026-09-07 08:30:00', '2026-09-09 14:05:00', 1),
+(21, 4, 12, '完整实现了所有要求的算法。', '/submissions/hw4/s230201_tree_graph.zip', '树与图实现源码.zip', 90.00, '代码高效，注释清晰，非常优秀。', '2026-09-06 19:00:00', '2026-09-09 14:10:00', 1),
+(22, 4, 16, '实现了树的遍历和图BFS，但图邻接表实现略有瑕疵。', '/submissions/hw4/s230205_tree_graph.zip', '树与图实现源码.zip', 70.00, '有部分bug，需要修复图的边添加逻辑。', '2026-09-07 20:30:00', '2026-09-09 14:15:00', 1),
+
+-- 作业5: 计算机网络-协议分析作业 (homework_id=5)
+(23, 5, 7, '已完成Wireshark抓包分析报告，包含TCP三次握手和HTTP请求响应详细分析。', '/submissions/hw5/s230102_network_analysis.docx', '网络分析报告.docx', 86.00, '分析详细，抓包截图清晰，报告格式规范。', '2026-08-23 09:00:00', '2026-08-26 15:00:00', 1),
+(24, 5, 11, '提交了TCP和HTTP的分析报告。', '/submissions/hw5/s230106_network_analysis.docx', '网络分析报告.docx', 74.00, '内容基本完整，但分析深度不够。', '2026-08-24 14:30:00', '2026-08-26 15:05:00', 1),
+(25, 5, 13, '详细的抓包分析，包含时序图和状态分析。', '/submissions/hw5/s230202_network_analysis.docx', '网络分析报告.docx', 90.00, '分析非常详尽，加入时序图是加分项。', '2026-08-23 22:00:00', '2026-08-26 15:10:00', 1),
+(26, 5, 15, '完成抓包分析和报告撰写。', '/submissions/hw5/s230204_network_analysis.docx', '网络分析报告.docx', 70.00, '内容完整但格式不够规范，部分术语使用有误。', '2026-08-24 16:20:00', '2026-08-26 15:15:00', 1),
+
+-- 作业6: SpringBoot-整合MyBatis作业 (homework_id=6)
+(27, 6, 9, '完成SpringBoot+MyBatis-Plus整合，包含CRUD、分页和条件构造器。', '/submissions/hw6/s230104_mybatis.zip', 'MyBatis整合源码.zip', 88.00, '整合正确，代码规范，条件构造器使用熟练。', '2026-09-08 15:00:00', '2026-09-11 09:00:00', 1),
+(28, 6, 10, '实现了基本的CRUD和分页查询。', '/submissions/hw6/s230105_mybatis.zip', 'MyBatis整合源码.zip', 72.00, '功能基本实现，但条件构造器的使用可以更丰富。', '2026-09-09 10:00:00', '2026-09-11 09:05:00', 1),
+(29, 6, 14, '完成MyBatis-Plus整合，并加入逻辑删除功能。', '/submissions/hw6/s230203_mybatis.zip', 'MyBatis整合源码.zip', 80.00, '逻辑删除实现正确，整体完成度较高。', '2026-09-08 20:00:00', '2026-09-11 09:10:00', 1),
+(30, 6, 16, '实现了CRUD和分页查询。', '/submissions/hw6/s230205_mybatis.zip', 'MyBatis整合源码.zip', 75.00, '功能完整，但建议学习使用更多MyBatis-Plus特性。', '2026-09-09 14:00:00', '2026-09-11 09:15:00', 1),
+
+-- 作业7: 操作系统-进程调度作业 (homework_id=7)
+(31, 7, 18, '实现了FCFS、SJF、时间片轮转三种调度算法，附测试结果和对比分析。', '/submissions/hw7/s230301_scheduler.zip', '进程调度源码.zip', 78.00, '三种算法实现正确，分析报告完整。', '2026-09-10 11:00:00', '2026-09-13 16:00:00', 1),
+(32, 7, 19, '完成三种调度算法的模拟实现。', '/submissions/hw7/s230302_scheduler.zip', '进程调度源码.zip', 70.00, '功能实现基本正确，SJF调度实现有轻微偏差。', '2026-09-11 08:30:00', '2026-09-13 16:05:00', 1),
+(33, 7, 20, '实现了三种调度算法，并加入图形化输出调度序列。', '/submissions/hw7/s230303_scheduler.zip', '进程调度源码.zip', 85.00, '图形化输出是创新点，调度逻辑完全正确。', '2026-09-10 22:00:00', '2026-09-13 16:10:00', 1),
+
+-- 作业8: 机械制图-零件图绘制作业 (homework_id=8)
+(34, 8, 18, '完成零件图绘制，包含所有尺寸标注和技术要求。', '/submissions/hw8/s230301_part.dwg', '零件图.dwg', 82.00, '绘制规范，尺寸标注完整，技术要求合理。', '2026-09-13 10:00:00', '2026-09-16 14:30:00', 1),
+(35, 8, 20, '绘制了零件图，标注了主要尺寸。', '/submissions/hw8/s230303_part.dwg', '零件图.dwg', 70.00, '图形基本正确，部分尺寸标注不完整。', '2026-09-14 09:00:00', '2026-09-16 14:35:00', 1),
+
+-- 作业9: 高等数学-多元微积分作业 (homework_id=9)
+(36, 9, 19, '完成第八章课后习题1-20题，包含详细解题步骤。', '/submissions/hw9/s230302_math.pdf', '多元微积分作业.pdf', 88.00, '解题步骤详细，答案正确率高，字迹工整。', '2026-09-16 16:00:00', '2026-09-19 09:00:00', 1),
+
+-- 作业10: Java程序设计-第三次作业 (homework_id=10)
+(37, 10, 6, '完成在线购物车系统，包含登录、购物车和下单功能。', '/submissions/hw10/s230101_shopping.zip', '购物车系统源码.zip', NULL, NULL, '2026-09-18 20:00:00', NULL, 1),
+(38, 10, 7, '实现了商品浏览和购物车功能。', '/submissions/hw10/s230102_shopping.zip', '购物车系统源码.zip', NULL, NULL, '2026-09-19 09:30:00', NULL, 1),
+(39, 10, 9, '完成全部功能，包含用户登录、商品管理、购物车和订单生成。', '/submissions/hw10/s230104_shopping.zip', '购物车系统源码.zip', NULL, NULL, '2026-09-18 18:00:00', NULL, 1),
+(40, 10, 11, '基本完成了登录和浏览功能，购物车部分未完成。', '/submissions/hw10/s230106_shopping.zip', '购物车系统源码.zip', NULL, NULL, '2026-09-19 20:00:00', NULL, 1);
+
+
 -- =====================================================
 -- Redis 建议说明（不放在 MySQL 中）
 -- =====================================================

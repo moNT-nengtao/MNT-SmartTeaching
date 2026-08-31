@@ -15,7 +15,7 @@ public class MessageConstant {
     public static final String ROLE_MISMATCH = "账号不存在或已禁用";
     public static final String USER_NOT_LOGIN = "用户未登录";
     public static final String ALREADY_EXISTS = "已存在";
-
+    public static final String USER_ILLEGAL = "非法用户操作";
     // ========== 通用错误 ==========
     public static final String UNKNOWN_ERROR = "未知错误";
 
@@ -93,4 +93,27 @@ public class MessageConstant {
     public static final String RECOMMEND_REASON_HOT_COURSE = "热门课程推荐";
     public static final String RECOMMEND_REASON_HIGH_SCORE_COURSE = "高分课程推荐";
 
+    // ========== 预警模块 ==========
+    public static final String WARNING_NOT_EXIST = "预警记录不存在";
+    public static final String WARNING_LEVEL_SEVERE = "严重";
+    public static final String WARNING_LEVEL_MEDIUM = "中等";
+    public static final String WARNING_LEVEL_SLIGHT = "轻微";
+    public static final String WARNING_TYPE_ABSENT = "旷课预警";
+    public static final String WARNING_TYPE_SCORE = "挂科预警";
+    public static final String WARNING_TYPE_HOMEWORK = "作业未提交预警";
+    public static final String WARNING_STATUS_HANDLED = "已处理";
+    public static final String WARNING_STATUS_UNHANDLED = "未处理";
+
+    public static final String SUGGEST_HIGH_1 = "立即联系辅导员和任课教师，制定紧急补习计划";
+    public static final String SUGGEST_HIGH_2 = "每日安排至少2小时额外学习时间，重点攻克薄弱科目";
+    public static final String SUGGEST_MEDIUM_1 = "主动与任课教师沟通，了解课程重点和提升方法";
+    public static final String SUGGEST_MEDIUM_2 = "制定每周学习计划，合理分配各科学习时间";
+    public static final String SUGGEST_LOW_1 = "保持现有学习状态，重点关注薄弱知识点";
+    public static final String SUGGEST_LOW_2 = "定期进行自我评估，及时调整学习策略";
+    public static final String SUGGEST_SCORE_1 = "重点复习不及格课程，争取补考通过";
+    public static final String SUGGEST_SCORE_2 = "整理错题本，针对性强化训练";
+    public static final String SUGGEST_ABSENT_1 = "严格遵守考勤制度，确保全勤";
+    public static final String SUGGEST_ABSENT_2 = "如有特殊情况及时请假，避免无故缺勤";
+    public static final String SUGGEST_HOMEWORK_1 = "按时完成并提交作业，避免影响平时成绩";
+    public static final String SUGGEST_HOMEWORK_2 = "合理规划时间，避免作业堆积";
 }

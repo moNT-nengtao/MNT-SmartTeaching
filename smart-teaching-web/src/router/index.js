@@ -62,6 +62,12 @@ const adminRoutes = [
     meta: { title: '发布公告', roles: ['admin', 'teacher'] }
   },
   {
+    path: '/homework/teacher',
+    name: 'HomeworkTeacher',
+    component: () => import('@/views/homework/teacher.vue'),
+    meta: { title: '作业管理', roles: ['admin', 'teacher'] }
+  },
+  {
     path: '/warning/report',
     name: 'WarningReport',
     component: () => import('@/views/warning/report.vue'),
@@ -146,6 +152,12 @@ const studentRoutes = [
     name: 'EvaluationStudent',
     component: () => import('@/views/evaluation/student.vue'),
     meta: { title: '课程评价', roles: ['student'] }
+  },
+  {
+    path: '/homework/student',
+    name: 'HomeworkStudent',
+    component: () => import('@/views/homework/student.vue'),
+    meta: { title: '我的作业', roles: ['student'] }
   }
 ]
 
