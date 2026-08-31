@@ -3,7 +3,7 @@
     <div class="page-card">
       <div class="page-header">
         <span class="page-title">学业预警报告</span>
-        <el-button type="primary" :icon="Download" @click="handleExport">导出报告</el-button>
+        <!-- 移除导出报告按钮 -->
       </div>
 
       <div v-if="report" class="report-content">
@@ -57,27 +57,69 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import ChartCard from '@/components/ChartCard.vue'
-import { getWarningDetail, exportWarningReport } from '@/api/warning'
+import { getWarningDetail } from '@/api/warning'
 
 const route = useRoute()
 const report = ref(null)
-const scoreOption = ref({})
-const attendanceOption = ref({})
+
+// 成绩趋势图表配置
+const scoreOption = computed(() => {
+  if (!report.value?.scoreTrend || report.value.scoreTrend.length === 0) return {}
+  return {
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: report.value.scoreTrend.map(item => item.courseName)
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100
+    },
+    series: [{
+      data: report.value.scoreTrend.map(item => item.score),
+      type: 'bar',
+      itemStyle: {
+        color: (params) => {
+          return params.value < 60 ? '#f56c6c' : '#67c23a'
+        }
+      }
+    }]
+  }
+})
+
+// 考勤图表配置
+const attendanceOption = computed(() => {
+  if (!report.value?.attendance) return {}
+  const data = report.value.attendance
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { orient: 'vertical', left: 'left' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      label: { show: true, formatter: '{b}\n{d}%' },
+      data: [
+        { value: data.attended || 0, name: '已签到', itemStyle: { color: '#67c23a' } },
+        { value: data.absent || 0, name: '缺勤', itemStyle: { color: '#f56c6c' } }
+      ]
+    }]
+  }
+})
 
 const fetchDetail = async () => {
   if (!route.query.id) return
   try {
     const res = await getWarningDetail(route.query.id)
     report.value = res.data
-  } catch (e) {}
-}
-
-const handleExport = () => {
-  exportWarningReport({ id: route.query.id })
+  } catch (error) {
+    console.error('获取预警详情失败', error)
+    ElMessage.error('获取预警详情失败')
+  }
 }
 
 onMounted(() => {

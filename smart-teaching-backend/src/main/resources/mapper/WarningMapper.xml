@@ -4,4 +4,169 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.WarningMapper">
 
+    <!-- 预警列表结果映射 -->
+    <resultMap id="WarningListResultMap" type="com.smartteaching.common.vo.warning.WarningListVO">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="studentName" property="studentName"/>
+        <result column="studentNo" property="studentNo"/>
+        <result column="className" property="className"/>
+        <result column="level" property="level"/>
+        <result column="warningType" property="warningType"/>
+        <result column="reason" property="reason"/>
+        <result column="createTime" property="createTime"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <!-- 分页查询预警列表 -->
+    <select id="selectWarningPage" resultMap="WarningListResultMap">
+        SELECT
+        w.id,
+        w.title AS title,
+        u.real_name AS studentName,
+        u.username AS studentNo,
+        c.name AS className,
+        w.level,
+        w.warning_type AS warningType,
+        w.content AS reason,
+        w.create_time AS createTime,
+        w.status
+        FROM warning_record w
+        INNER JOIN sys_user u ON w.user_id = u.id
+        LEFT JOIN org_class c ON u.class_id = c.id
+        WHERE w.status = 1
+        <if test="currentUserId != null">
+            AND w.user_id = #{currentUserId}
+        </if>
+        <if test="dto.level != null and dto.level != ''">
+            <choose>
+                <when test="dto.level == 'high'">AND w.level = 3</when>
+                <when test="dto.level == 'medium'">AND w.level = 2</when>
+                <when test="dto.level == 'low'">AND w.level = 1</when>
+            </choose>
+        </if>
+        <if test="dto.type != null and dto.type != ''">
+            AND w.warning_type = #{dto.type}
+        </if>
+        <if test="dto.studentName != null and dto.studentName != ''">
+            AND u.real_name LIKE CONCAT('%', #{dto.studentName}, '%')
+        </if>
+        <if test="dto.studentNo != null and dto.studentNo != ''">
+            AND u.username LIKE CONCAT('%', #{dto.studentNo}, '%')
+        </if>
+        <if test="dto.status != null">
+            AND w.status = #{dto.status}
+        </if>
+        ORDER BY w.level DESC, w.create_time DESC
+    </select>
+
+    <!-- 查询预警详情 -->
+    <select id="selectWarningDetail" resultType="com.smartteaching.common.vo.warning.WarningDetailVO">
+        SELECT
+            u.id AS studentId,
+            u.real_name AS studentName,
+            u.username AS studentNo,
+            c.name AS className,
+            col.name AS collegeName,
+            m.name AS majorName,
+            w.id AS warningId,
+            w.content AS reason,
+            w.warning_type AS warningType,
+            w.level AS levelCode,
+            w.create_time AS createTime,
+            w.status AS warningStatus,
+            CASE
+                WHEN w.level = 3 THEN 'high'
+                WHEN w.level = 2 THEN 'medium'
+                WHEN w.level = 1 THEN 'low'
+                END AS level
+        FROM warning_record w
+                 INNER JOIN sys_user u ON w.user_id = u.id
+                 LEFT JOIN org_class c ON u.class_id = c.id
+                 LEFT JOIN org_major m ON c.major_id = m.id
+                 LEFT JOIN org_college col ON m.college_id = col.id
+        WHERE w.id = #{id}
+    </select>
+
+    <!-- 查询学生成绩趋势 -->
+    <select id="selectScoreTrend" resultType="com.smartteaching.common.vo.warning.WarningDetailVO$ScoreTrendData">
+        SELECT
+            c.name AS courseName,
+            ss.score,
+            c.semester
+        FROM student_score ss
+                 INNER JOIN course c ON ss.course_id = c.id
+        WHERE ss.student_id = (
+            SELECT user_id FROM warning_record WHERE id = #{id}
+        )
+          AND ss.status = 1
+        ORDER BY ss.create_time DESC
+            LIMIT 6
+    </select>
+
+    <!-- 查询学生考勤数据 -->
+    <select id="selectAttendanceData" resultType="com.smartteaching.common.vo.warning.WarningDetailVO$AttendanceData">
+        SELECT
+            COUNT(DISTINCT session_id) AS totalSessions,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS attended,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS absent
+        FROM attendance_record
+        WHERE student_id = (
+            SELECT user_id FROM warning_record WHERE id = #{id}
+        )
+    </select>
+
+    <!-- 查询预警统计数据 -->
+    <select id="selectWarningStats" resultType="com.smartteaching.common.vo.warning.WarningStatsVO">
+        SELECT
+            COUNT(CASE WHEN warning_type = 'absent' AND status = 1 THEN 1 END) AS absentCount,
+            COUNT(CASE WHEN warning_type = 'score' AND status = 1 THEN 1 END) AS failCount,
+            COUNT(CASE WHEN warning_type = 'homework' AND status = 1 THEN 1 END) AS homeworkCount,
+            COUNT(CASE WHEN status = 1 THEN 1 END) AS totalCount,
+            COUNT(CASE WHEN level = 3 AND status = 1 THEN 1 END) AS highLevelCount,
+            COUNT(CASE WHEN level = 2 AND status = 1 THEN 1 END) AS mediumLevelCount,
+            COUNT(CASE WHEN level = 1 AND status = 1 THEN 1 END) AS lowLevelCount
+        FROM warning_record
+        WHERE status = 1
+    </select>
+
+    <!-- 导出预警列表（不分页） -->
+    <select id="selectWarningExportList" resultMap="WarningListResultMap">
+        SELECT
+        w.id,
+        w.title AS title,
+        u.real_name AS studentName,
+        u.username AS studentNo,
+        c.name AS className,
+        w.level,
+        w.warning_type AS warningType,
+        w.content AS reason,
+        w.create_time AS createTime,
+        w.status
+        FROM warning_record w
+        INNER JOIN sys_user u ON w.user_id = u.id
+        LEFT JOIN org_class c ON u.class_id = c.id
+        WHERE w.status = 1
+        <if test="currentUserId != null">
+            AND w.user_id = #{currentUserId}
+        </if>
+        <if test="dto.level != null and dto.level != ''">
+            <choose>
+                <when test="dto.level == 'high'">AND w.level = 3</when>
+                <when test="dto.level == 'medium'">AND w.level = 2</when>
+                <when test="dto.level == 'low'">AND w.level = 1</when>
+            </choose>
+        </if>
+        <if test="dto.type != null and dto.type != ''">
+            AND w.warning_type = #{dto.type}
+        </if>
+        <if test="dto.studentName != null and dto.studentName != ''">
+            AND u.real_name LIKE CONCAT('%', #{dto.studentName}, '%')
+        </if>
+        <if test="dto.studentNo != null and dto.studentNo != ''">
+            AND u.username LIKE CONCAT('%', #{dto.studentNo}, '%')
+        </if>
+        ORDER BY w.level DESC, w.create_time DESC
+    </select>
+
 </mapper>
