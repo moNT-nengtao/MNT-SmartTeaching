@@ -1,5 +1,6 @@
 package com.smartteaching.service.score;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -7,6 +8,7 @@ import com.smartteaching.common.constant.MessageConstant;
 import com.smartteaching.common.dto.score.ScoreEnterDTO;
 import com.smartteaching.common.dto.score.ScorePageReqDTO;
 import com.smartteaching.common.result.PageResult;
+import com.smartteaching.common.utils.RedisUtils;
 import com.smartteaching.common.vo.score.*;
 import com.smartteaching.entity.course.Course;
 import com.smartteaching.entity.score.Score;
@@ -18,12 +20,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * @ClassName ScoreServiceImpl
@@ -39,18 +42,41 @@ public class ScoreServiceImpl extends ServiceImpl<ScoreMapper, Score> implements
     private CourseMapper courseMapper;
     @Resource
     private ScoreMapper scoreMapper;
-
-    public ScoreServiceImpl(ScoreMapper scoreMapper) {
-        this.scoreMapper = scoreMapper;
-    }
+    @Resource
+    private RedisUtils redisUtils;
+    private static final long DASHBOARD_CACHE_MINUTE = 20;
+    private static final String CACHE_PREFIX_SCORESTATS = "dashboard:scorestats";
 
     /**
-     * 成绩统计
+     * 成绩统计缓存
      * @param dto
      * @return
      */
-    @Override
     public ScoreStatsQueryVO getScoreStats(ScorePageReqDTO dto) {
+        String cacheKey = RedisUtils.buildKey(CACHE_PREFIX_SCORESTATS);
+
+        // 查缓存
+        String cachedJson = redisUtils.getStr(cacheKey);
+        if (cachedJson != null) {
+            return JSON.parseObject(cachedJson, ScoreStatsQueryVO.class);
+        }
+
+        // 缓存未命中，查询数据库组装数据
+        ScoreStatsQueryVO vo = buildScoreDashboardData(dto);
+
+        // 3. 写入缓存（JSON字符串形式）
+        String json = JSON.toJSONString(vo);
+        redisUtils.setStr(cacheKey, json, DASHBOARD_CACHE_MINUTE, TimeUnit.MINUTES);
+
+        return vo;
+    }
+
+    /**
+     * 成绩统计数据
+     * @param dto
+     * @return
+     */
+    public ScoreStatsQueryVO buildScoreDashboardData(ScorePageReqDTO dto) {
         ScoreStatsQueryVO vo = new ScoreStatsQueryVO();
 
         //1.统计卡片
