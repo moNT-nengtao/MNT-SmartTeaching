@@ -25,6 +25,16 @@ public class Notice extends BaseEntity {
 
     private String content;
 
+    /**
+     * 公告类型：system=全校公告, course=课程公告, notice=普通通知
+     */
+    private String type;
+
+    /**
+     * 关联课程ID（课程公告时不为空）
+     */
+    private Long courseId;
+
     private Long publisherId;
 
     private LocalDateTime publishTime;

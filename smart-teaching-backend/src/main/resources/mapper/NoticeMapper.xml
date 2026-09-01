@@ -4,4 +4,112 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.NoticeMapper">
 
+    <!-- 公告列表/详情 结果映射 -->
+    <resultMap id="NoticeListResultMap" type="com.smartteaching.common.vo.notice.NoticeListVO">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="type" property="type"/>
+        <result column="courseId" property="courseId"/>
+        <result column="courseName" property="courseName"/>
+        <result column="publisherId" property="publisherId"/>
+        <result column="publisherName" property="publisherName"/>
+        <result column="publishTime" property="publishTime"/>
+        <result column="isTop" property="isTop"/>
+        <result column="status" property="status"/>
+        <result column="isRead" property="isRead"/>
+        <result column="createTime" property="createTime"/>
+    </resultMap>
+
+    <!--
+        当前用户可见公告范围：
+        1. admin 可见全部
+        2. 系统公告(system) 与 普通通知(notice) 所有人可见
+        3. 课程公告(course) 仅【选修该课程的学生】【授课教师】可见
+    -->
+    <sql id="NoticeVisibleCondition">
+        n.status = 1
+        AND (
+            #{role} = 'admin'
+            OR n.type IN ('system', 'notice')
+            OR (n.type = 'course' AND EXISTS (
+                    SELECT 1 FROM selection_record sr
+                    WHERE sr.course_id = n.course_id AND sr.student_id = #{userId} AND sr.status = 1
+                ))
+            OR (n.type = 'course' AND EXISTS (
+                    SELECT 1 FROM course cc
+                    WHERE cc.id = n.course_id AND cc.teacher_id = #{userId}
+                ))
+        )
+    </sql>
+
+    <!-- 分页查询公告列表 -->
+    <select id="selectNoticePage" resultMap="NoticeListResultMap">
+        SELECT
+            n.id,
+            n.title,
+            n.content,
+            n.type,
+            n.course_id AS courseId,
+            c.name AS courseName,
+            n.publisher_id AS publisherId,
+            u.real_name AS publisherName,
+            n.publish_time AS publishTime,
+            n.is_top AS isTop,
+            n.status,
+            CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END AS isRead,
+            n.create_time AS createTime
+        FROM notice n
+        LEFT JOIN sys_user u ON n.publisher_id = u.id
+        LEFT JOIN course c ON n.course_id = c.id
+        LEFT JOIN notice_read_record r ON r.notice_id = n.id AND r.user_id = #{userId}
+        WHERE <include refid="NoticeVisibleCondition"/>
+        <if test="dto.keyword != null and dto.keyword != ''">
+            AND (n.title LIKE CONCAT('%', #{dto.keyword}, '%')
+                 OR n.content LIKE CONCAT('%', #{dto.keyword}, '%'))
+        </if>
+        <if test="dto.isRead != null and dto.isRead == 1">
+            AND r.id IS NOT NULL
+        </if>
+        <if test="dto.isRead != null and dto.isRead == 0">
+            AND r.id IS NULL
+        </if>
+        ORDER BY n.is_top DESC, n.publish_time DESC, n.id DESC
+    </select>
+
+    <!-- 查询单条当前用户可见的公告 -->
+    <select id="selectNoticeDetail" resultMap="NoticeListResultMap">
+        SELECT
+            n.id,
+            n.title,
+            n.content,
+            n.type,
+            n.course_id AS courseId,
+            c.name AS courseName,
+            n.publisher_id AS publisherId,
+            u.real_name AS publisherName,
+            n.publish_time AS publishTime,
+            n.is_top AS isTop,
+            n.status,
+            CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END AS isRead,
+            n.create_time AS createTime
+        FROM notice n
+        LEFT JOIN sys_user u ON n.publisher_id = u.id
+        LEFT JOIN course c ON n.course_id = c.id
+        LEFT JOIN notice_read_record r ON r.notice_id = n.id AND r.user_id = #{userId}
+        WHERE n.id = #{id}
+          AND <include refid="NoticeVisibleCondition"/>
+    </select>
+
+    <!-- 统计当前用户可见且未读的公告数 -->
+    <select id="countUnread" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM notice n
+        WHERE <include refid="NoticeVisibleCondition"/>
+          AND NOT EXISTS (
+              SELECT 1 FROM notice_read_record r
+              WHERE r.notice_id = n.id AND r.user_id = #{userId}
+          )
+    </select>
+
 </mapper>
