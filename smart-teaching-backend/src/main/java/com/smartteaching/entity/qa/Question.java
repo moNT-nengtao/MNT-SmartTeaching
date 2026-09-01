@@ -21,11 +21,21 @@ public class Question extends BaseEntity {
 
     private Long userId;
 
+    /**
+     * 关联课程ID（课程分区）
+     */
+    private Long courseId;
+
     private String title;
 
     private String content;
 
     private String tags;
+
+    /**
+     * 是否匿名发布：0=实名, 1=匿名
+     */
+    private Integer isAnonymous;
 
     private Integer isTop;
 

@@ -4,4 +4,111 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.QaMapper">
 
+    <!-- 问题列表/详情 结果映射 -->
+    <resultMap id="QaQuestionResultMap" type="com.smartteaching.common.vo.qa.QaQuestionListVO">
+        <id column="id" property="id"/>
+        <result column="courseId" property="courseId"/>
+        <result column="courseName" property="courseName"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="tag" property="tag"/>
+        <result column="isTop" property="isTop"/>
+        <result column="isAnonymous" property="isAnonymous"/>
+        <result column="authorId" property="authorId"/>
+        <result column="authorName" property="authorName"/>
+        <result column="replyCount" property="replyCount"/>
+        <result column="likeCount" property="likeCount"/>
+        <result column="createTime" property="createTime"/>
+    </resultMap>
+
+    <!-- 回复结果映射 -->
+    <resultMap id="QaReplyResultMap" type="com.smartteaching.common.vo.qa.QaReplyVO">
+        <id column="id" property="id"/>
+        <result column="questionId" property="questionId"/>
+        <result column="userId" property="userId"/>
+        <result column="authorName" property="authorName"/>
+        <result column="isTeacher" property="isTeacher"/>
+        <result column="content" property="content"/>
+        <result column="likeCount" property="likeCount"/>
+        <result column="createTime" property="createTime"/>
+    </resultMap>
+
+    <!-- 分页查询问题列表（匿名问题时隐藏提问者姓名） -->
+    <select id="selectQuestionPage" resultMap="QaQuestionResultMap">
+        SELECT
+            q.id,
+            q.course_id AS courseId,
+            c.name AS courseName,
+            q.title,
+            q.content,
+            q.tags AS tag,
+            q.is_top AS isTop,
+            q.is_anonymous AS isAnonymous,
+            q.user_id AS authorId,
+            CASE WHEN q.is_anonymous = 1 THEN NULL ELSE u.real_name END AS authorName,
+            q.reply_count AS replyCount,
+            q.like_count AS likeCount,
+            q.create_time AS createTime
+        FROM qa_question q
+        LEFT JOIN sys_user u ON q.user_id = u.id
+        LEFT JOIN course c ON q.course_id = c.id
+        WHERE q.status = 1
+        <if test="dto.courseId != null">
+            AND q.course_id = #{dto.courseId}
+        </if>
+        <if test="dto.tag != null and dto.tag != ''">
+            AND FIND_IN_SET(#{dto.tag}, q.tags) &gt; 0
+        </if>
+        <if test="dto.keyword != null and dto.keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{dto.keyword}, '%')
+                 OR q.content LIKE CONCAT('%', #{dto.keyword}, '%'))
+        </if>
+        ORDER BY q.is_top DESC, q.create_time DESC, q.id DESC
+    </select>
+
+    <!-- 查询问题详情 -->
+    <select id="selectQuestionDetail" resultMap="QaQuestionResultMap">
+        SELECT
+            q.id,
+            q.course_id AS courseId,
+            c.name AS courseName,
+            q.title,
+            q.content,
+            q.tags AS tag,
+            q.is_top AS isTop,
+            q.is_anonymous AS isAnonymous,
+            q.user_id AS authorId,
+            CASE WHEN q.is_anonymous = 1 THEN NULL ELSE u.real_name END AS authorName,
+            q.reply_count AS replyCount,
+            q.like_count AS likeCount,
+            q.create_time AS createTime
+        FROM qa_question q
+        LEFT JOIN sys_user u ON q.user_id = u.id
+        LEFT JOIN course c ON q.course_id = c.id
+        WHERE q.id = #{id} AND q.status = 1
+    </select>
+
+    <!-- 查询问题的回复列表 -->
+    <select id="selectReplies" resultMap="QaReplyResultMap">
+        SELECT
+            r.id,
+            r.question_id AS questionId,
+            r.user_id AS userId,
+            u.real_name AS authorName,
+            CASE WHEN u.role = 'teacher' OR u.role = 'admin' THEN 1 ELSE 0 END AS isTeacher,
+            r.content,
+            r.like_count AS likeCount,
+            r.create_time AS createTime
+        FROM qa_reply r
+        LEFT JOIN sys_user u ON r.user_id = u.id
+        WHERE r.question_id = #{questionId} AND r.status = 1
+        ORDER BY r.create_time ASC, r.id ASC
+    </select>
+
+    <!-- 查询全部去重标签（逗号分隔拆分） -->
+    <select id="selectAllTags" resultType="java.lang.String">
+        SELECT tags FROM qa_question
+        WHERE status = 1 AND tags IS NOT NULL AND tags != ''
+    </select>
+
 </mapper>
