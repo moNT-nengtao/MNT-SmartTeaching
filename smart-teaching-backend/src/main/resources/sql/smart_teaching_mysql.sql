@@ -198,6 +198,8 @@ CREATE TABLE notice (
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
                         title VARCHAR(255) NOT NULL,
                         content TEXT NOT NULL,
+                        type VARCHAR(20) NOT NULL DEFAULT 'system' COMMENT '公告类型:system=全校,course=课程,notice=普通通知',
+                        course_id BIGINT DEFAULT NULL COMMENT '关联课程ID（课程公告）',
                         publisher_id BIGINT NOT NULL,
                         publish_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         is_top TINYINT NOT NULL DEFAULT 0 COMMENT '0=不置顶,1=置顶',
@@ -205,7 +207,9 @@ CREATE TABLE notice (
                         create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         INDEX idx_publisher_id (publisher_id),
-                        INDEX idx_status (status)
+                        INDEX idx_status (status),
+                        INDEX idx_type (type),
+                        INDEX idx_course_id (course_id)
 ) COMMENT='公告表';
 
 CREATE TABLE notice_read_record (
@@ -224,9 +228,11 @@ CREATE TABLE notice_read_record (
 CREATE TABLE qa_question (
                              id BIGINT PRIMARY KEY AUTO_INCREMENT,
                              user_id BIGINT NOT NULL,
+                             course_id BIGINT DEFAULT NULL COMMENT '关联课程ID（课程分区）',
                              title VARCHAR(255) NOT NULL,
                              content TEXT NOT NULL,
                              tags VARCHAR(255) DEFAULT NULL COMMENT '标签逗号分隔',
+                             is_anonymous TINYINT NOT NULL DEFAULT 0 COMMENT '0=实名,1=匿名',
                              is_top TINYINT NOT NULL DEFAULT 0,
                              like_count INT NOT NULL DEFAULT 0,
                              reply_count INT NOT NULL DEFAULT 0,
@@ -234,7 +240,8 @@ CREATE TABLE qa_question (
                              create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                              INDEX idx_user_id (user_id),
-                             INDEX idx_status (status)
+                             INDEX idx_status (status),
+                             INDEX idx_course_id (course_id)
 ) COMMENT='问题表';
 
 CREATE TABLE qa_reply (
