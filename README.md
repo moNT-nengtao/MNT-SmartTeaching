@@ -110,17 +110,12 @@ Nginx 1.31.3 本地部署，监听 8081，托管前端 `dist` 静态资源并反
 
 ## 五、项目目录结构
 
+项目仅提供前后端两个工程：
+
 ```text
-MNT-SmartTeaching/
-├─ mnt-st/                                  # 主工程
-│  ├─ smart-teaching-backend/               # 后端 Spring Boot 工程
-│  ├─ smart-teaching-web/                   # 前端 Vue3 工程（源码）
-│  ├─ nginx-1.31.3/                         # 本地运行目录（非项目提供，仓库已忽略）
-│  ├─ .github/modernize/java-upgrade/       # GitHub 现代化改造钩子脚本
-│  ├─ .vscode/                              # 编辑器配置
-│  └─ .gitignore
-└─ 项目文档/                                 # 项目文档目录（需求/接口/结构说明等）
-   └─ README.md                             # 本文档
+mnt-st/
+├─ smart-teaching-backend/     # 后端 Spring Boot 工程（Java 17）
+└─ smart-teaching-web/         # 前端 Vue3 工程（源码）
 ```
 
 ### 后端结构（com.smartteaching）
@@ -270,6 +265,17 @@ server {
 
 部署后访问：`http://localhost:8081`（按实际配置端口调整）
 
+### 7.6 代码内绝对路径提示
+
+代码中残留了本机开发时的绝对路径，克隆到其他环境后需按实际位置修改，否则对应功能不可用：
+
+| 文件 | 位置 | 需修改内容 |
+|---|---|---|
+| `smart-teaching-web/nginx.conf` | `root` 与 `/avatar/` 的 `alias` | 写死 `F:/GitHub/porject/MNT-SmartTeaching/...`，改为本机 dist 与 uploads 实际路径 |
+| `smart-teaching-web/build.bat` | 顶部 `NGINX_DIR` | 写死 `F:\GitHub\porject\MNT-SmartTeaching\mnt-st\nginx-1.31.3`，改为本机 Nginx 安装路径（或改用 7.5 手动部署，不使用该脚本） |
+
+说明：后端 `application.yml` 使用相对路径（`./uploads`）与 `localhost`，正常情况下无需改动；前端 `vite.config.js` 的代理目标同样为 `localhost`，开发环境可直接使用。
+
 ## 八、默认账号
 
 | 角色 | 账号 | 密码 | 说明 |
@@ -287,27 +293,11 @@ server {
 - 统一返回：`{ "code": 1, "data": {}, "msg": "success" }`，成功 `code=1`
 - 认证方式：请求头 `Authorization: Bearer <token>`
 - 鉴权失败：`401` 未登录 / Token 过期，`403` 无权限
-- 接口定义文档：
-  - 需求侧接口文档：`项目文档/接口文档.md`、`项目文档/前后端接口文档.md`
-  - OpenAPI 导入文件：`项目文档/智慧教学平台.openapi.json`（可导入 Apifox）
-  - 作业/预警接口：`项目文档/homework_warning_api.json`、`smart-teaching-backend/docs/attendance-api.json`
+- 接口定义：
   - 在线 Swagger：后端启动后访问 `http://localhost:8080/swagger-ui/index.html`
+  - 接口示例：后端工程内 `smart-teaching-backend/docs/attendance-api.json`
 
-## 十、项目文档索引
-
-| 文档 | 路径 | 说明 |
-|---|---|---|
-| 需求规格说明 | `项目文档/MNT-SmartTeaching轻量化智能教学管理系统需求规格说明文档.docx` | 权威需求定义（背景/功能/技术约束/实施计划） |
-| 接口文档 | `项目文档/接口文档.md` | 前端真实需要的接口与字段（后端开发遵守版） |
-| 前后端接口文档 | `项目文档/前后端接口文档.md` | 接口联调说明 |
-| 前端目录结构设计 | `项目文档/前端目录结构设计.md` | 前端目录、组件、依赖链、数据流 |
-| 后端结构说明 | `项目文档/后端结构说明.md` | 后端分层架构与职责边界 |
-| 后端构建流程 | `项目文档/后端构建流程.md` | 后端分步骤搭建指南 |
-| 数据库表结构预览 | `项目文档/数据库表结构预览.txt` | 数据表清单 |
-| 数据库脚本 | `项目文档/smart_teaching_mysql.sql`（另存于后端 resources/sql 下） | 建库与初始化数据 |
-| OpenAPI 文件 | `项目文档/智慧教学平台.openapi.json` 等 | 可导入 Apifox 调试 |
-
-## 十一、开发与版本规划
+## 十、开发与版本规划
 
 ### 实施阶段
 
@@ -321,7 +311,7 @@ server {
 
 当前主分支 `main`，提交按模块演进（仪表盘 → 选课 → 学业预警 → 课程管理 → 答疑社区 → 公告 → 数据库优化等）。
 
-## 十二、常见问题
+## 十一、常见问题
 
 - **前端页面刷新 404**：确认 Nginx 已配置 `try_files $uri $uri/ /index.html`（history 路由必需）
 - **登录成功但接口 401**：确认 Token 未过期、Redis 无该 Token 黑名单记录
