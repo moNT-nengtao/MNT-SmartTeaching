@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
@@ -38,17 +38,17 @@
 
     <!-- 近7日活跃用户：last_login_time 匹配日期 -->
     <select id="selectWeeklyActiveUser" resultType="java.util.Map">
-        SELECT DATE_FORMAT(last_login_time,'%Y‑%m‑%d') AS day, COUNT(DISTINCT id) AS activeNum
+        SELECT DATE_FORMAT(last_login_time,'%Y-%m-%d') AS day, COUNT(DISTINCT id) AS activeNum
         FROM sys_user
-        WHERE status=1 AND DATE_FORMAT(last_login_time,'%Y‑%m‑%d') IN
+        WHERE status=1 AND DATE_FORMAT(last_login_time,'%Y-%m-%d') IN
         <foreach collection="dateList" open="(" separator="," close=")" item="d">
             #{d}
         </foreach>
         GROUP BY day
     </select>
 
-<!--教师仪表盘-->
-    <!--统计卡片-->
+    <!-- 教师仪表盘 -->
+    <!-- 统计卡片 -->
     <select id="selectDashboardTeacherCard" resultType="com.smartteaching.common.vo.dashborad.DashboardTeacherVO$TeacherStatCards">
         SELECT
             COUNT(DISTINCT c.id) AS courseCount,
@@ -60,7 +60,7 @@
         WHERE c.teacher_id = #{teacherId} AND c.status = 1
     </select>
 
-    <!--成绩分布柱状图-->
+    <!-- 成绩分布柱状图 -->
     <select id="selectTeacherScoreSegment" resultType="java.util.Map">
         SELECT
             CAST(SUM(CASE WHEN ss.score &lt; 60 THEN 1 ELSE 0 END) AS SIGNED) AS s0,
@@ -72,14 +72,14 @@
         WHERE ss.teacher_id = #{teacherId} AND ss.status = 1
     </select>
 
-    <!--教师平均评价分数-->
+    <!-- 教师平均评价分数 -->
     <select id="selectTeacherAvgEvaluate" resultType="java.math.BigDecimal">
         SELECT ROUND(AVG(ce.score),2)
         FROM course_evaluation ce
         WHERE ce.teacher_id = #{teacherId}
     </select>
 
-    <!--近7日考勤签到率趋势-->
+    <!-- 近7日考勤签到率趋势 -->
     <select id="selectTeacherAttendanceTrend" resultType="java.util.Map">
         SELECT
             DATE_FORMAT(ats.session_date, '%m-%d') AS day,
@@ -107,7 +107,7 @@
         ORDER BY ats.session_date ASC
     </select>
 
-<!--学生-->
+    <!-- 学生仪表盘 -->
 
     <!-- 计算学生GPA -->
     <select id="calculateGPA" resultType="java.math.BigDecimal">
@@ -138,9 +138,7 @@
           AND ss.score &lt; 60
     </select>
 
-    <!-- ==================== 雷达图：各科成绩 ==================== -->
-
-    <!-- 获取学生各科成绩（用于雷达图） -->
+    <!-- 雷达图：各科成绩 -->
     <select id="getStudentScores" resultType="java.util.HashMap">
         SELECT c.name AS course_name, ss.score
         FROM student_score ss
@@ -150,9 +148,7 @@
         ORDER BY ss.create_time DESC
     </select>
 
-    <!-- ==================== 绩点趋势 ==================== -->
-
-    <!-- 获取学生成绩按学期分组（用于绩点趋势） -->
+    <!-- 绩点趋势 -->
     <select id="getScoresBySemester" resultType="java.util.HashMap">
         SELECT c.semester, ROUND(AVG(ss.score), 2) AS avg_score
         FROM student_score ss
@@ -164,9 +160,7 @@
         ORDER BY c.semester
     </select>
 
-    <!-- ==================== 成绩对比柱状图 ==================== -->
-
-    <!-- 获取各科成绩详情（用于成绩对比柱状图） -->
+    <!-- 成绩对比柱状图 -->
     <select id="getScoreDetail" resultType="java.util.HashMap">
         SELECT c.name AS course_name,
                ss.usual_score,
@@ -180,9 +174,7 @@
             LIMIT 6
     </select>
 
-    <!-- ==================== 考勤统计 ==================== -->
-
-    <!-- 统计本月考勤率 -->
+    <!-- 考勤统计：本月考勤率 -->
     <select id="calculateMonthlyAttendanceRate" resultType="java.math.BigDecimal">
         SELECT ROUND(
                        COUNT(CASE WHEN ar.status = 1 THEN 1 END) * 100.0 / COUNT(*),
@@ -195,7 +187,7 @@
           AND a_s.session_date &lt;= LAST_DAY(NOW())
     </select>
 
-    <!-- 获取月度考勤统计（近6个月） -->
+    <!-- 考勤统计：月度考勤（近6个月） -->
     <select id="getMonthlyAttendance" resultType="java.util.HashMap">
         SELECT DATE_FORMAT(a_s.session_date, '%Y-%m') AS month,
                ROUND(
@@ -210,9 +202,7 @@
         ORDER BY month
     </select>
 
-    <!-- ==================== 学生信息 ==================== -->
-
-    <!-- 获取学生信息（含班级、专业、学院） -->
+    <!-- 学生信息 -->
     <select id="getStudentInfo" resultType="java.util.HashMap">
         SELECT u.id,
                u.username,

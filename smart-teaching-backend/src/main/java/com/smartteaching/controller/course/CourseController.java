@@ -27,6 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @ClassName CourseController
+ * @Description
+ * @Author MNT
+ * @Date 2026/8/29 21:13
+ **/
 @RestController
 @RequestMapping("/api/course")
 @Slf4j

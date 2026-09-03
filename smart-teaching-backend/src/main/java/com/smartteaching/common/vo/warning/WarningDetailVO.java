@@ -50,14 +50,23 @@ public class WarningDetailVO {
     @Data
     public static class AttendanceData {
         private Integer totalSessions;
+        /** 考勤成功 */
         private Integer attended;
+        /** 迟到 */
+        private Integer late;
+        /** 请假 */
+        private Integer leaveCount;
+        /** 缺勤（未落定） */
         private Integer absent;
+        /** 旷课（落定缺勤） */
+        private Integer truant;
 
         public Double getAttendanceRate() {
             if (totalSessions == null || totalSessions == 0) {
                 return 0.0;
             }
-            return attended != null ? (double) attended / totalSessions * 100 : 0.0;
+            int att = (attended != null ? attended : 0) + (late != null ? late : 0);
+            return (double) att / totalSessions * 100;
         }
     }
 }

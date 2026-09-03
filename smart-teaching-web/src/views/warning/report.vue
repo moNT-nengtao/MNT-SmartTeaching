@@ -92,10 +92,17 @@ const scoreOption = computed(() => {
   }
 })
 
-// 考勤图表配置
+// 考勤图表配置（考勤五态：考勤成功/迟到/请假/缺勤/旷课）
 const attendanceOption = computed(() => {
   if (!report.value?.attendance) return {}
   const data = report.value.attendance
+  const pieData = [
+    { value: data.attended || 0, name: '考勤成功', itemStyle: { color: '#67c23a' } },
+    { value: data.late || 0, name: '迟到', itemStyle: { color: '#e6a23c' } },
+    { value: data.leaveCount || 0, name: '请假', itemStyle: { color: '#409eff' } },
+    { value: data.absent || 0, name: '缺勤', itemStyle: { color: '#f56c6c' } },
+    { value: data.truant || 0, name: '旷课', itemStyle: { color: '#c0392b' } }
+  ].filter(item => item.value > 0)
   return {
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
@@ -103,10 +110,7 @@ const attendanceOption = computed(() => {
       type: 'pie',
       radius: ['40%', '70%'],
       label: { show: true, formatter: '{b}\n{d}%' },
-      data: [
-        { value: data.attended || 0, name: '已签到', itemStyle: { color: '#67c23a' } },
-        { value: data.absent || 0, name: '缺勤', itemStyle: { color: '#f56c6c' } }
-      ]
+      data: pieData
     }]
   }
 })

@@ -83,7 +83,8 @@ const handleSubmit = async () => {
 onMounted(async () => {
   try {
     const res = await getMyCourses()
-    courseList.value = res.data || []
+    // /selection/my 返回的是分页结构，课程在 records 中
+    courseList.value = res.data?.records || []
   } catch (e) {}
 })
 </script>

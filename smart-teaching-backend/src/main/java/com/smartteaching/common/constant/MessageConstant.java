@@ -116,4 +116,24 @@ public class MessageConstant {
     public static final String SUGGEST_ABSENT_2 = "如有特殊情况及时请假，避免无故缺勤";
     public static final String SUGGEST_HOMEWORK_1 = "按时完成并提交作业，避免影响平时成绩";
     public static final String SUGGEST_HOMEWORK_2 = "合理规划时间，避免作业堆积";
+
+    // ========== 考勤模块 ==========
+    public static final String ATTENDANCE_COURSE_NOT_EXIST = "课程不存在或已被禁用";
+    public static final String ATTENDANCE_COURSE_NOT_OWNED = "只能为自己授课的课程发起签到";
+    public static final String ATTENDANCE_NO_STUDENTS = "该课程暂无有效选课学生，无法发起签到";
+    public static final String ATTENDANCE_PATTERN_INVALID = "签到图案无效，请至少连接3个节点";
+    public static final String ATTENDANCE_DURATION_INVALID = "签到时长必须在1-20分钟之间";
+    public static final String ATTENDANCE_SESSION_NOT_EXIST = "签到会话不存在";
+    public static final String ATTENDANCE_SESSION_EXPIRED = "签到会话已结束或已过期";
+    public static final String ATTENDANCE_PATTERN_MISMATCH = "签到图案不正确，请核对后重试";
+    public static final String ATTENDANCE_ALREADY_CHECKED = "您已完成本次签到，无需重复签到";
+    public static final String ATTENDANCE_MARKED_TPL = "您已被标记为%s，无需签到";
+    public static final String ATTENDANCE_NOT_STUDENT = "只有学生可以进行签到";
+    public static final String ATTENDANCE_NOT_TEACHER = "只有教师可以操作签到会话";
+    public static final String ATTENDANCE_NO_PERMISSION = "无权操作该签到会话";
+    public static final String ATTENDANCE_RECORD_NOT_EXIST = "考勤记录不存在";
+    public static final String ATTENDANCE_STATUS_INVALID = "教师只能将考勤状态修改为迟到、请假或旷课";
+    public static final String ATTENDANCE_ALREADY_ENDED = "签到会话已结束";
+    public static final String ATTENDANCE_SESSION_ENDED = "签到会话已结束，历史考勤不可修改";
+    public static final String ATTENDANCE_MANUAL_CHECKIN_FAILED = "该学生当前状态无法手动签到";
 }

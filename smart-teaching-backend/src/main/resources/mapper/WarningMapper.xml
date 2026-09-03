@@ -104,12 +104,15 @@
             LIMIT 6
     </select>
 
-    <!-- 查询学生考勤数据 -->
+    <!-- 查询学生考勤数据（考勤状态：0缺勤/1考勤成功/2迟到/3请假/4旷课/5手动签到，手动签到计入出勤） -->
     <select id="selectAttendanceData" resultType="com.smartteaching.common.vo.warning.WarningDetailVO$AttendanceData">
         SELECT
             COUNT(DISTINCT session_id) AS totalSessions,
-            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS attended,
-            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS absent
+            SUM(CASE WHEN status IN (1,5) THEN 1 ELSE 0 END) AS attended,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS late,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS leaveCount,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS absent,
+            SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) AS truant
         FROM attendance_record
         WHERE student_id = (
             SELECT user_id FROM warning_record WHERE id = #{id}

@@ -4,4 +4,126 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartteaching.mapper.AttendanceMapper">
 
+    <!-- 查询签到会话详情（含课程名、教师名） -->
+    <select id="selectSessionDetail" resultType="com.smartteaching.common.vo.attendance.AttendanceSessionVO">
+        SELECT
+            ats.id AS sessionId,
+            ats.course_id AS courseId,
+            c.name AS courseName,
+            ats.teacher_id AS teacherId,
+            u.real_name AS teacherName,
+            ats.session_date AS sessionDate,
+            ats.duration AS duration,
+            ats.status AS status
+        FROM attendance_session ats
+                 INNER JOIN course c ON ats.course_id = c.id
+                 INNER JOIN sys_user u ON ats.teacher_id = u.id
+        WHERE ats.id = #{sessionId}
+    </select>
+
+    <!-- 查询会话全部学生考勤名单（含学生信息） -->
+    <select id="selectSessionRecords" resultType="com.smartteaching.common.vo.attendance.AttendanceStudentVO">
+        SELECT
+            ar.id AS recordId,
+            ar.student_id AS studentId,
+            su.username AS studentNo,
+            su.real_name AS studentName,
+            oc.name AS className,
+            ar.status AS status,
+            ar.checkin_time AS checkinTime
+        FROM attendance_record ar
+                 INNER JOIN sys_user su ON ar.student_id = su.id
+                 LEFT JOIN org_class oc ON su.class_id = oc.id
+        WHERE ar.session_id = #{sessionId}
+        ORDER BY
+            CASE ar.status
+                WHEN 1 THEN 0
+                WHEN 5 THEN 1
+                WHEN 2 THEN 2
+                WHEN 3 THEN 3
+                WHEN 0 THEN 4
+                WHEN 4 THEN 5
+                ELSE 6
+            END,
+            ar.checkin_time IS NULL,
+            ar.checkin_time ASC
+    </select>
+
+    <!-- 查询学生个人考勤记录（含课程信息） -->
+    <select id="selectMyRecords" resultType="com.smartteaching.common.vo.attendance.AttendanceRecordVO">
+        SELECT
+            ar.id AS recordId,
+            ar.session_id AS sessionId,
+            ats.course_id AS courseId,
+            c.name AS courseName,
+            c.code AS courseCode,
+            ats.session_date AS sessionDate,
+            ar.checkin_time AS checkinTime,
+            ar.status AS status
+        FROM attendance_record ar
+                 INNER JOIN attendance_session ats ON ar.session_id = ats.id
+                 INNER JOIN course c ON ats.course_id = c.id
+        WHERE ar.student_id = #{studentId}
+        ORDER BY ats.session_date DESC, ar.id DESC
+    </select>
+
+    <!-- 查询会话考勤统计 -->
+    <select id="selectSessionStats" resultType="com.smartteaching.common.vo.attendance.AttendanceStatsVO">
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS present,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS late,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS 'leave',
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS absent,
+            SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) AS truant,
+            SUM(CASE WHEN status = 5 THEN 1 ELSE 0 END) AS manual
+        FROM attendance_record
+        WHERE session_id = #{sessionId}
+    </select>
+
+    <!-- 查询教师/管理员的历史考勤会话列表（用于名单切换，按时间倒序） -->
+    <select id="selectSessionList" resultType="com.smartteaching.common.vo.attendance.AttendanceSessionVO">
+        SELECT
+            ats.id AS sessionId,
+            ats.course_id AS courseId,
+            c.name AS courseName,
+            ats.teacher_id AS teacherId,
+            u.real_name AS teacherName,
+            ats.session_date AS sessionDate,
+            ats.duration AS duration,
+            ats.status AS status
+        FROM attendance_session ats
+                 INNER JOIN course c ON ats.course_id = c.id
+                 INNER JOIN sys_user u ON ats.teacher_id = u.id
+        <where>
+            <if test="teacherId != null">
+                AND ats.teacher_id = #{teacherId}
+            </if>
+            <if test="courseId != null">
+                AND ats.course_id = #{courseId}
+            </if>
+        </where>
+        ORDER BY ats.session_date DESC, ats.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询课程的有效选课学生ID列表 -->
+    <select id="selectStudentIdsByCourse" resultType="java.lang.Long">
+        SELECT student_id
+        FROM selection_record
+        WHERE course_id = #{courseId}
+          AND status = 1
+    </select>
+
+    <!-- 查询教师授课课程选项（管理员传null查全部启用课程） -->
+    <select id="selectTeacherCourses" resultType="com.smartteaching.common.vo.attendance.AttendanceCourseVO">
+        SELECT c.id AS id, c.name AS courseName
+        FROM course c
+        WHERE c.status = 1
+        <if test="teacherId != null">
+            AND c.teacher_id = #{teacherId}
+        </if>
+        ORDER BY c.id DESC
+    </select>
+
 </mapper>

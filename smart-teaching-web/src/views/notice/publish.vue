@@ -43,10 +43,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { publishNotice, updateNotice } from '@/api/notice'
+import { getCourseList } from '@/api/course'
 import { useUserStore } from '@/store/user'
 
 const router = useRouter()
@@ -83,4 +84,28 @@ const handleSubmit = async () => {
     router.push('/notice/list')
   })
 }
+
+// 课程公告需选择教师自己授课的课程
+const loadCourses = async () => {
+  if (!userStore.isTeacher) return
+  try {
+    const res = await getCourseList({
+      pageNum: 1,
+      pageSize: 100,
+      status: 1,
+      teacherId: userStore.userInfo?.id
+    })
+    // /course/list 返回字段为 id + name，统一转成前端需要的 id + courseName
+    courseList.value = (res.data?.records || []).map((c) => ({
+      id: c.id,
+      courseName: c.name
+    }))
+  } catch (e) {
+    courseList.value = []
+  }
+}
+
+onMounted(() => {
+  loadCourses()
+})
 </script>

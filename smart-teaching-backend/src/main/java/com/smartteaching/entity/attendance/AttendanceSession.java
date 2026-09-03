@@ -1,12 +1,11 @@
 package com.smartteaching.entity.attendance;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.smartteaching.entity.BaseEntity;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
@@ -36,5 +35,14 @@ public class AttendanceSession extends BaseEntity {
 
     private String checkCode;
 
+    /** 签到有效时长（分钟，上限20），同时用于重建 Redis 时效 */
+    private Integer duration;
+
     private Integer status;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 }

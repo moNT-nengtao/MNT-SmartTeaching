@@ -32,5 +32,8 @@ public class AttendanceRecord extends BaseEntity {
 
     private LocalDateTime checkinTime;
 
+    /**
+     * 考勤状态：0=缺勤(初始),1=考勤成功,2=迟到,3=请假,4=旷课
+     */
     private Integer status;
 }

@@ -75,6 +75,8 @@ import { useRouter } from 'vue-router'
 import { Edit, Collection, Notebook, Star } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination.vue'
 import { getQuestionList, getTagList } from '@/api/qa'
+import { getMyCourses } from '@/api/selection'
+import { getCourseList } from '@/api/course'
 import { useUserStore } from '@/store/user'
 
 const router = useRouter()
@@ -118,8 +120,34 @@ const goToDetail = (row) => {
   router.push(`/qa/detail/${row.id}`)
 }
 
+// 课程分区：学生看自己选的课，教师看自己授课的课，管理员看全部课程
+const loadCourses = async () => {
+  try {
+    let list = []
+    if (userStore.isStudent) {
+      const res = await getMyCourses({ pageNum: 1, pageSize: 100 })
+      list = (res.data?.records || []).map((c) => ({ id: c.courseId, name: c.courseName }))
+    } else if (userStore.isTeacher) {
+      const res = await getCourseList({
+        pageNum: 1,
+        pageSize: 100,
+        status: 1,
+        teacherId: userStore.userInfo?.id
+      })
+      list = (res.data?.records || []).map((c) => ({ id: c.id, name: c.name }))
+    } else if (userStore.isAdmin) {
+      const res = await getCourseList({ pageNum: 1, pageSize: 100, status: 1 })
+      list = (res.data?.records || []).map((c) => ({ id: c.id, name: c.name }))
+    }
+    courseList.value = list
+  } catch (e) {
+    courseList.value = []
+  }
+}
+
 onMounted(() => {
   fetchList()
+  loadCourses()
 })
 </script>
 
