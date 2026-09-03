@@ -1,6 +1,6 @@
 # MNT-SmartTeaching 轻量化智能教学管理系统
 
-> 本科毕业设计项目 · 单体 Web 架构 · Spring Boot + Vue3
+> 单体 Web 架构 · Spring Boot + Vue3
 > 仓库地址：https://github.com/moNT-nengtao/MNT-SmartTeaching.git
 
 ## 一、项目简介
