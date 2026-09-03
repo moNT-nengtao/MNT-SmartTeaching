@@ -1,6 +1,6 @@
 # MNT-SmartTeaching 轻量化智能教学管理系统
 
-> 单体 Web 架构 · Spring Boot + Vue3
+> 个人项目（MNT） · 单体 Web 架构 · Spring Boot + Vue3
 > 仓库地址：https://github.com/moNT-nengtao/MNT-SmartTeaching.git
 
 ## 一、项目简介
@@ -9,7 +9,7 @@ MNT-SmartTeaching 是一套面向高校小型教学场景的轻量化智能教�
 
 核心设计理念：
 
-- **架构轻量化**：SpringBoot + Vue3 单体架构，无微服务、无集群，部署便捷、运行低耗，适配本科毕设研发标准
+- **架构轻量化**：SpringBoot + Vue3 单体架构，无微服务、无集群，部署便捷、运行低耗
 - **功能精细化**：保留教学核心刚需功能，剔除冗余模块，教务流程标准化
 - **场景智能化**：课表、答疑、考勤、预警、选课推荐、AI 助教等八项差异化创新能力
 - **数据可视化**：基于 ECharts 的多角色、多维度教学数据统计分析
@@ -115,7 +115,7 @@ MNT-SmartTeaching/
 ├─ mnt-st/                                  # 主工程
 │  ├─ smart-teaching-backend/               # 后端 Spring Boot 工程
 │  ├─ smart-teaching-web/                   # 前端 Vue3 工程（源码）
-│  ├─ nginx-1.31.3/                         # 本地 Nginx 部署目录（含 dist 与部署配置）
+│  ├─ nginx-1.31.3/                         # 本地运行目录（非项目提供，仓库已忽略）
 │  ├─ .github/modernize/java-upgrade/       # GitHub 现代化改造钩子脚本
 │  ├─ .vscode/                              # 编辑器配置
 │  └─ .gitignore
@@ -201,7 +201,9 @@ MySQL 数据库 `smart_teaching`，共 **24 张表**，脚本位于 `smart-teach
 | MySQL | 5.7 / 8.0 | 数据库 |
 | Redis | 5.0+ | 缓存 / Token 黑名单（无 Redis 可注释 application.yml 中 redis 配置块） |
 | Ollama（可选） | 最新 | AI 助教，需拉取 qwen3:8b 模型 |
-| Nginx | 1.31.3 | 本地部署（工程已内置） |
+| Nginx | 1.31.3 | 生产部署（需自行安装） |
+
+> 说明：本项目仅提供后端与前端代码，MySQL、Redis、Nginx、Ollama 等运行依赖均需自行安装配置。
 
 ### 7.2 初始化数据库
 
@@ -243,40 +245,30 @@ npm run dev
 - 访问地址：`http://localhost:5173`（自动打开）
 - 开发代理：`/api`、`/files` 已代理到 `http://localhost:8080`，无需处理跨域
 
-### 7.5 生产部署（Nginx）
+### 7.5 生产部署
 
-方式一：执行一键部署脚本（Windows）
-
-```bat
-cd mnt-st/smart-teaching-web
-build.bat
-```
-
-脚本自动完成 4 步：关闭 Nginx → 删除 dist → `npm run build` → 启动 Nginx。
-
-方式二：手动部署
+项目只提供前后端代码，前端构建产物需自行部署到任意静态服务器（如 Nginx）。以 Nginx 为例：
 
 ```bash
 cd mnt-st/smart-teaching-web
 npm run build          # 产物输出到 dist/
-# 将 dist/ 拷贝至 nginx-1.31.3/smart-teaching-web/dist
-# 配置 nginx-1.31.3/conf/nginx.conf（已就绪）
-# 启动 Nginx
-nginx-1.31.3/nginx.exe
+# 将 dist/ 部署到 Nginx 静态目录（如 /usr/share/nginx/html/dist 或自定义路径）
 ```
 
-Nginx 关键配置（已内置）：
+Nginx 参考配置（需自行安装并按下述要点编写 `nginx.conf`）：
 
 ```nginx
-listen 8081;
-root ./smart-teaching-web/dist;                      # 前端静态资源
-location /api/    { proxy_pass http://localhost:8080; }  # 接口反向代理
-location ~ ^/avatar/  { alias ../smart-teaching-backend/uploads/avatars/; }  # 头像
-location ~ ^/files/   { alias ../smart-teaching-backend/uploads/; }           # 通用文件
-location /       { try_files $uri $uri/ /index.html; }  # history 路由回退
+server {
+    listen 8081;
+    root <前端构建产物 dist 路径>;                      # 前端静态资源
+    location / { try_files $uri $uri/ /index.html; }  # history 路由回退
+    location /api/ { proxy_pass http://localhost:8080; }  # 接口反向代理
+    location ~ ^/avatar/ { alias <后端 uploads/avatars 路径>/; }  # 头像
+    location ~ ^/files/  { alias <后端 uploads 路径>/; }          # 通用文件
+}
 ```
 
-部署后访问：`http://localhost:8081`
+部署后访问：`http://localhost:8081`（按实际配置端口调整）
 
 ## 八、默认账号
 
@@ -285,7 +277,7 @@ location /       { try_files $uri $uri/ /index.html; }  # history 路由回退
 | 系统管理员 | admin | 123456 | 最高权限 |
 | 教师 | t001 | 123456 | 张教授 |
 | 教师 | t002 | 123456 | 李老师 |
-| 学生 | s230101（如 s230102、s230201…） | 123456 | 莫能涛，其余学生账号见建库脚本 sys_user 表 |
+| 学生 | s230101（如 s230102、s230201…） | 123456 | 示例学生账号，其余见建库脚本 sys_user 表 |
 
 说明：密码为 MD5 存储（`123456` 的密文 `e10adc3949ba59abbe56e057f20f883e`），登录时按 MD5 比对。
 
