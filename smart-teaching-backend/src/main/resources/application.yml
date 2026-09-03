@@ -66,3 +66,11 @@ logging:
     com.smartteaching: DEBUG
     com.smartteaching.**.mapper: DEBUG
     org.springframework.security: DEBUG
+
+# Ollama 配置
+ollama:
+  host: http://localhost:11434
+  model: qwen3:8b
+  timeout: 120
+  max-history: 10
+  daily-limit: 30

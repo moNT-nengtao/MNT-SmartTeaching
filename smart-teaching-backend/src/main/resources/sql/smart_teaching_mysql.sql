@@ -167,11 +167,12 @@ CREATE TABLE attendance_session (
                                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                                     course_id BIGINT NOT NULL,
                                     teacher_id BIGINT NOT NULL,
-                                    class_id BIGINT NOT NULL,
+                                    class_id BIGINT DEFAULT NULL COMMENT '班级ID（课程跨班级时为空，学生以选课记录为准）',
                                     session_date DATE NOT NULL COMMENT '上课日期',
                                     start_time TIME DEFAULT NULL,
                                     end_time TIME DEFAULT NULL,
-                                    check_code VARCHAR(16) NOT NULL COMMENT '签到码',
+                                    check_code VARCHAR(16) NOT NULL COMMENT '签到码/九宫格图案序列(如0,1,4,7)',
+                                    duration INT DEFAULT NULL COMMENT '签到有效时长（分钟，上限20）',
                                     status TINYINT NOT NULL DEFAULT 1 COMMENT '1=进行中,0=已结束',
                                     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -185,12 +186,14 @@ CREATE TABLE attendance_record (
                                    student_id BIGINT NOT NULL,
                                    longitude DECIMAL(10,6) DEFAULT NULL,
                                    latitude DECIMAL(10,6) DEFAULT NULL,
-                                   checkin_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                   status TINYINT NOT NULL DEFAULT 1 COMMENT '1=已签到,0=缺勤',
+                                   checkin_time DATETIME DEFAULT NULL COMMENT '签到时间（未签到为空）',
+                                   status TINYINT NOT NULL DEFAULT 0 COMMENT '0=缺勤,1=考勤成功,2=迟到,3=请假,4=旷课,5=手动签到(教师代签,特殊留痕)',
+                                   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                   UNIQUE KEY uk_session_student (session_id, student_id),
                                    INDEX idx_session_id (session_id),
                                    INDEX idx_student_id (student_id)
 ) COMMENT='签到记录表';
-
 -- =====================================================
 -- 7. 公告模块
 -- =====================================================
@@ -279,6 +282,17 @@ CREATE TABLE ai_message (
                             INDEX idx_session_id (session_id)
 ) COMMENT='AI消息表';
 
+-- AI每日调用统计表：按用户+日期统计使用次数，实现每日问答次数限制
+CREATE TABLE ai_daily_usage (
+                                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                user_id BIGINT NOT NULL COMMENT '用户ID',
+                                use_date DATE NOT NULL COMMENT '使用日期',
+                                use_count INT NOT NULL DEFAULT 0 COMMENT '当日已用次数',
+                                create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                UNIQUE KEY uk_user_date (user_id, use_date)
+) COMMENT='AI每日调用统计表';
+
 -- =====================================================
 -- 10. 课程评价模块（含各维度打分）
 -- =====================================================
@@ -289,7 +303,6 @@ CREATE TABLE course_evaluation (
                                    teacher_id BIGINT NOT NULL COMMENT '教师ID',
                                    student_id BIGINT NOT NULL COMMENT '学生ID',
                                    score DECIMAL(3,2) NOT NULL COMMENT '综合评分（1-5分）',
-
     -- 各维度打分（1-5分）
                                    teaching_ability DECIMAL(3,2) DEFAULT NULL COMMENT '授课能力评分',
                                    class_atmosphere DECIMAL(3,2) DEFAULT NULL COMMENT '课堂氛围评分',
@@ -375,7 +388,6 @@ CREATE TABLE IF NOT EXISTS homework_submission (
                                                    INDEX idx_homework_id (homework_id),
                                                    INDEX idx_student_id (student_id)
 ) COMMENT='作业提交表';
-
 
 
 -- =====================================================
