@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartteaching.mapper.HomeworkMapper">
+
+    <!-- 教师/管理员 作业列表结果映射 -->
+    <resultMap id="HomeworkListResultMap" type="com.smartteaching.common.vo.homework.HomeworkListVO">
+        <id column="id" property="id"/>
+        <result column="courseId" property="courseId"/>
+        <result column="courseName" property="courseName"/>
+        <result column="teacherId" property="teacherId"/>
+        <result column="teacherName" property="teacherName"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="attachmentUrl" property="attachmentUrl"/>
+        <result column="attachmentName" property="attachmentName"/>
+        <result column="deadline" property="deadline"/>
+        <result column="status" property="status"/>
+        <result column="createTime" property="createTime"/>
+        <result column="submissionCount" property="submissionCount"/>
+        <result column="gradedCount" property="gradedCount"/>
+    </resultMap>
+
+    <!-- 学生 作业列表结果映射 -->
+    <resultMap id="HomeworkStudentListResultMap" type="com.smartteaching.common.vo.homework.HomeworkStudentListVO">
+        <id column="id" property="id"/>
+        <result column="courseId" property="courseId"/>
+        <result column="courseName" property="courseName"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="attachmentUrl" property="attachmentUrl"/>
+        <result column="attachmentName" property="attachmentName"/>
+        <result column="deadline" property="deadline"/>
+        <result column="createTime" property="createTime"/>
+        <result column="submissionId" property="submissionId"/>
+        <result column="submitStatus" property="submitStatus"/>
+        <result column="score" property="score"/>
+        <result column="comment" property="comment"/>
+        <result column="submitTime" property="submitTime"/>
+    </resultMap>
+
+    <!-- 提交记录结果映射 -->
+    <resultMap id="HomeworkSubmissionResultMap" type="com.smartteaching.common.vo.homework.HomeworkSubmissionVO">
+        <id column="id" property="id"/>
+        <result column="homeworkId" property="homeworkId"/>
+        <result column="studentId" property="studentId"/>
+        <result column="studentName" property="studentName"/>
+        <result column="studentNo" property="studentNo"/>
+        <result column="className" property="className"/>
+        <result column="content" property="content"/>
+        <result column="attachmentUrl" property="attachmentUrl"/>
+        <result column="attachmentName" property="attachmentName"/>
+        <result column="score" property="score"/>
+        <result column="comment" property="comment"/>
+        <result column="submitTime" property="submitTime"/>
+        <result column="gradeTime" property="gradeTime"/>
+    </resultMap>
+
+    <!-- 教师/管理员 分页查询作业列表 -->
+    <select id="selectHomeworkPage" resultMap="HomeworkListResultMap">
+        SELECT
+            h.id,
+            h.course_id AS courseId,
+            c.name AS courseName,
+            h.teacher_id AS teacherId,
+            u.real_name AS teacherName,
+            h.title,
+            h.content,
+            h.attachment_url AS attachmentUrl,
+            h.attachment_name AS attachmentName,
+            h.deadline,
+            h.status,
+            h.create_time AS createTime,
+            (SELECT COUNT(*) FROM homework_submission hs WHERE hs.homework_id = h.id AND hs.status = 1) AS submissionCount,
+            (SELECT COUNT(*) FROM homework_submission hs WHERE hs.homework_id = h.id AND hs.status = 1 AND hs.score IS NOT NULL) AS gradedCount
+        FROM homework h
+        INNER JOIN course c ON h.course_id = c.id
+        LEFT JOIN sys_user u ON h.teacher_id = u.id
+        WHERE h.status = 1
+        <if test="dto.teacherId != null">
+            AND h.teacher_id = #{dto.teacherId}
+        </if>
+        <if test="dto.courseId != null">
+            AND h.course_id = #{dto.courseId}
+        </if>
+        <if test="dto.title != null and dto.title != ''">
+            AND h.title LIKE CONCAT('%', #{dto.title}, '%')
+        </if>
+        ORDER BY h.create_time DESC
+    </select>
+
+    <!-- 学生 分页查询作业列表（只看自己选的课的作业，左连接提交记录） -->
+    <select id="selectStudentHomeworkPage" resultMap="HomeworkStudentListResultMap">
+        SELECT
+            h.id,
+            h.course_id AS courseId,
+            c.name AS courseName,
+            h.title,
+            h.content,
+            h.attachment_url AS attachmentUrl,
+            h.attachment_name AS attachmentName,
+            h.deadline,
+            h.create_time AS createTime,
+            hs.id AS submissionId,
+            CASE WHEN hs.id IS NOT NULL AND hs.status = 1 THEN 1 ELSE 0 END AS submitStatus,
+            hs.score,
+            hs.comment,
+            hs.submit_time AS submitTime
+        FROM homework h
+        INNER JOIN course c ON h.course_id = c.id
+        INNER JOIN selection_record sr ON sr.course_id = h.course_id AND sr.student_id = #{studentId} AND sr.status = 1
+        LEFT JOIN homework_submission hs ON hs.homework_id = h.id AND hs.student_id = #{studentId}
+        WHERE h.status = 1
+        <if test="dto.courseId != null">
+            AND h.course_id = #{dto.courseId}
+        </if>
+        <if test="dto.title != null and dto.title != ''">
+            AND h.title LIKE CONCAT('%', #{dto.title}, '%')
+        </if>
+        ORDER BY h.create_time DESC
+    </select>
+
+    <!-- 查询某作业的提交列表 -->
+    <select id="selectSubmissionList" resultMap="HomeworkSubmissionResultMap">
+        SELECT
+            hs.id,
+            hs.homework_id AS homeworkId,
+            hs.student_id AS studentId,
+            u.real_name AS studentName,
+            u.username AS studentNo,
+            cls.name AS className,
+            hs.content,
+            hs.attachment_url AS attachmentUrl,
+            hs.attachment_name AS attachmentName,
+            hs.score,
+            hs.comment,
+            hs.submit_time AS submitTime,
+            hs.grade_time AS gradeTime
+        FROM homework_submission hs
+        INNER JOIN sys_user u ON hs.student_id = u.id
+        LEFT JOIN org_class cls ON u.class_id = cls.id
+        WHERE hs.homework_id = #{homeworkId}
+        AND hs.status = 1
+        ORDER BY hs.submit_time DESC
+    </select>
+
+    <!-- 查询学生是否选了某课程 -->
+    <select id="countStudentCourse" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM selection_record
+        WHERE student_id = #{studentId} AND course_id = #{courseId} AND status = 1
+    </select>
+
+</mapper>

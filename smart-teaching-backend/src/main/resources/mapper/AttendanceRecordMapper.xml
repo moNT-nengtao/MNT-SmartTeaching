@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartteaching.mapper.AttendanceRecordMapper">
+
+    <!-- 学生签到成功：仅当仍处于缺勤(0)时更新为考勤成功(1)，防止覆盖教师已标记的迟到/请假 -->
+    <update id="checkinSuccess">
+        UPDATE attendance_record
+        SET status        = 1,
+            checkin_time  = #{checkinTime},
+            longitude     = #{longitude},
+            latitude      = #{latitude},
+            update_time   = NOW()
+        WHERE id = #{id}
+          AND session_id = #{sessionId}
+          AND student_id = #{studentId}
+          AND status = 0
+    </update>
+
+    <!-- 教师手动签到：仅当记录仍为缺勤(0)时更新为手动签到(5)，留痕特殊状态 -->
+    <update id="manualCheckin">
+        UPDATE attendance_record
+        SET status      = 5,
+            checkin_time = #{checkinTime},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND session_id = #{sessionId}
+          AND student_id = #{studentId}
+          AND status = 0
+    </update>
+
+    <!-- 结束会话：将该会话下所有缺勤(0)记录落定为旷课(4) -->
+    <update id="batchFinalizeTruant">
+        UPDATE attendance_record
+        SET status      = 4,
+            update_time = NOW()
+        WHERE session_id = #{sessionId}
+          AND status = 0
+    </update>
+
+    <!-- 统计学生在指定会话中的考勤记录条数（幂等校验） -->
+    <select id="countBySessionAndStudent" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM attendance_record
+        WHERE session_id = #{sessionId}
+          AND student_id = #{studentId}
+    </select>
+
+    <!-- 批量插入考勤记录（创建会话时一次写入本课程全部学生，初始状态缺勤0） -->
+    <insert id="batchInsertRecords">
+        INSERT INTO attendance_record
+            (session_id, student_id, longitude, latitude, checkin_time, status, create_time, update_time)
+        VALUES
+        <foreach collection="records" item="r" separator=",">
+            (#{r.sessionId}, #{r.studentId}, #{r.longitude}, #{r.latitude}, #{r.checkinTime}, #{r.status}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+</mapper>
