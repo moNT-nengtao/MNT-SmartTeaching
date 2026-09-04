@@ -65,6 +65,11 @@ public class AiServiceImpl implements AiService {
         if (request.getMessage() == null || request.getMessage().isBlank()) {
             request.setMessage(request.getDescription());
         }
+        // 评语要求简洁，追加长度约束，避免生成过长评语导致响应缓慢
+        String commentMsg = request.getMessage();
+        if (commentMsg != null && !commentMsg.contains("字以内")) {
+            request.setMessage(commentMsg + "（请将评语控制在150字以内，突出优点并给出改进建议，语言亲切、专业）");
+        }
         return handleChat(request, userId, "teacher");
     }
 

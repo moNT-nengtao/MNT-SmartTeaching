@@ -268,6 +268,11 @@ public class OllamaServiceImpl implements OllamaService {
         request.put("model", ollamaConfig.getModel());
         request.put("messages", messages);
         request.put("stream", stream);
+        // 关闭 qwen 系列模型的推理（think）模式：
+        // 本地 CPU 上开启思考会消耗 40~100s，关闭后简单问题 3~8s 内返回，解决 AI 模块超时问题
+        request.put("think", false);
+        // 保持模型常驻（30 分钟内不卸载），避免首次提问时重新加载模型导致长时间等待
+        request.put("keep_alive", "30m");
         request.put("options", Map.of(
                 "temperature", 0.7,
                 "top_p", 0.9

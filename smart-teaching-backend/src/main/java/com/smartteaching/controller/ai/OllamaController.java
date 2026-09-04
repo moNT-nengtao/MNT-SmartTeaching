@@ -67,7 +67,7 @@ public class OllamaController {
         aiService.checkDailyLimit(userId);
         aiService.consumeDailyCount(userId);
 
-        SseEmitter emitter = new SseEmitter(120000L);
+        SseEmitter emitter = new SseEmitter(300000L);
 
         executor.execute(() -> {
             try {
@@ -153,7 +153,7 @@ public class OllamaController {
         aiService.checkDailyLimit(userId);
         aiService.consumeDailyCount(userId);
 
-        SseEmitter emitter = new SseEmitter(120000L);
+        SseEmitter emitter = new SseEmitter(300000L);
         executor.execute(() -> {
             try {
                 // 先推送会话ID，便于前端记录新会话
