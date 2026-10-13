@@ -5,7 +5,8 @@ export function aiAnswer(data) {
   return request({
     url: '/ai/answer',
     method: 'post',
-    data
+    data,
+    timeout: 120000
   })
 }
 
@@ -14,7 +15,8 @@ export function aiGenerateComment(data) {
   return request({
     url: '/ai/comment',
     method: 'post',
-    data
+    data,
+    timeout: 120000
   })
 }
 
@@ -33,7 +35,8 @@ export function aiChat(data) {
   return request({
     url: '/ai/chat',
     method: 'post',
-    data
+    data,
+    timeout: 120000
   })
 }
 

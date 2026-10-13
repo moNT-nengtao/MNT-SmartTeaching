@@ -331,25 +331,34 @@ const sendStream = async (text) => {
   const reader = resp.body.getReader()
   const decoder = new TextDecoder('utf-8')
   let buffer = ''
+  // 是否已收到 done 事件（回答完整），用于避免连接收尾阶段异常时误报"回答不完整"
+  let streamDone = false
   const aiMsg = { role: 'ai', content: '' }
   messages.value.push(aiMsg)
 
   // 读取并解析 SSE 事件
   const readChunk = async () => {
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      let idx
-      while ((idx = buffer.indexOf('\n\n')) >= 0) {
-        const block = buffer.slice(0, idx)
-        buffer = buffer.slice(idx + 2)
-        parseSSEBlock(block, aiMsg)
+    try {
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        let idx
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const block = buffer.slice(0, idx)
+          buffer = buffer.slice(idx + 2)
+          if (block.includes('event:done')) streamDone = true
+          parseSSEBlock(block, aiMsg)
+        }
       }
-    }
-    // 处理末尾未闭合事件
-    if (buffer.trim()) {
-      parseSSEBlock(buffer, aiMsg)
+      // 处理末尾未闭合事件
+      if (buffer.trim()) {
+        if (buffer.includes('event:done')) streamDone = true
+        parseSSEBlock(buffer, aiMsg)
+      }
+    } catch (err) {
+      // 连接在收尾阶段异常关闭：若已收到 done（回答完整），视为正常结束，不误报"不完整"
+      if (!streamDone) throw err
     }
   }
   await readChunk()
@@ -391,21 +400,33 @@ const handleSend = async () => {
     refreshSessions()
     refreshRemaining()
   } catch (e) {
-    // 流式失败 → 非流式兜底
+    // 流式失败处理：
+    // 1) 若 SSE 已推送过部分内容 → 说明连接中断，直接提示不完整，不重复生成
+    // 2) 若未收到任何内容 → 走非流式兜底，且把结果填充到已有的 AI 气泡，
+    //    避免出现两条 AI 回答、也避免重复消耗剩余次数
     if (mode.value !== 'analysis') {
-      try {
-        const res = await aiChat({
-          message: text,
-          mode: mode.value,
-          sessionId: currentSessionId.value
-        })
-        messages.value.push({ role: 'ai', content: res.data?.answer || '暂无回答' })
-        currentSessionId.value = res.data?.sessionId ?? currentSessionId.value
-        remainingCount.value = res.data?.remainingCount ?? remainingCount.value
-        refreshSessions()
-        refreshRemaining()
-      } catch (e2) {
-        messages.value.push({ role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后重试。' })
+      const lastAi = [...messages.value].reverse().find((m) => m.role === 'ai')
+      const hasPartial = lastAi && lastAi.content && lastAi.content.trim().length > 0
+      if (hasPartial) {
+        lastAi.content += '\n\n[回答不完整，连接中断，请重新提问]'
+      } else {
+        try {
+          const res = await aiChat({
+            message: text,
+            mode: mode.value,
+            sessionId: currentSessionId.value
+          })
+          const answer = res.data?.answer || '暂无回答'
+          if (lastAi) lastAi.content = answer
+          else messages.value.push({ role: 'ai', content: answer })
+          currentSessionId.value = res.data?.sessionId ?? currentSessionId.value
+          remainingCount.value = res.data?.remainingCount ?? remainingCount.value
+          refreshSessions()
+          refreshRemaining()
+        } catch (e2) {
+          if (lastAi) lastAi.content = '抱歉，AI 服务暂时不可用，请稍后重试。'
+          else messages.value.push({ role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后重试。' })
+        }
       }
     } else {
       messages.value.push({ role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后重试。' })
