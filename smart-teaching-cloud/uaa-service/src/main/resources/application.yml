@@ -1,0 +1,74 @@
+﻿# ============================================================
+#  uaa-service 微服务配置
+# ============================================================
+
+spring:
+  application:
+    name: uaa-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 本地单机 Nacos 默认命名空间即可，无需修改
+  # ---------- 数据源【本地MySQL，与原单体共用 smart_teaching 库】 ----------
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/smart_teaching?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      connection-timeout: 30000
+      pool-name: SmartTeachingHikariPool
+
+  # ---------- Redis【本地】 ----------
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: 123456
+      timeout: 10000ms
+      database: 0
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: -1ms
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 200MB
+      file-size-threshold: 2MB
+
+server:
+  port: 8081
+
+# ---------- JWT（所有服务共享同一密钥与规则，保证跨服务校验一致） ----------
+jwt:
+  secret: abcdefghijklmnopqrstuvwxyz1234567890
+  expiration: 604800000
+  header: Authorization
+  token-prefix: "Bearer "
+
+# 上传目录统一为微服务工程根下的 uploads（绝对路径），前端 /files/** 全局可访问
+file:
+  upload-path: C:/Users/猫猫君/Desktop/MNT-SmartTeaching/mnt-st/smart-teaching-cloud/uploads
+  avatar:
+    relative-path: uploads/avatars
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: INFO
+    com.smartteaching: DEBUG
+    com.smartteaching.**.mapper: DEBUG
+    org.springframework.security: DEBUG
