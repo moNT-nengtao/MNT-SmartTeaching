@@ -5,9 +5,8 @@ import com.smartteaching.entity.user.User;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 用户 Mapper（精简版，仅提供基础 CRUD）
- * 供 JWT 认证链路（loadUserByUsername / getCurrentUser）使用，
- * 用户域的列表/分页等能力统一由 uaa-service 提供（Feign 调用）
+ * 公共用户 Mapper：各服务通用基础 CRUD。
+ * uaa 服务的自定义用户查询见 UserExtMapper（继承本接口）。
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {

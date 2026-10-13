@@ -30,3 +30,6 @@ derby.log
 *.iml
 .DS_Store
 Thumbs.db
+
+# 文档转换临时产物
+_docx_task/

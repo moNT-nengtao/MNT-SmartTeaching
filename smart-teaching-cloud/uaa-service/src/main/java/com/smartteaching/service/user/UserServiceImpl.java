@@ -17,7 +17,7 @@ import com.smartteaching.common.utils.UserExcelValidateUtil;
 import com.smartteaching.common.vo.user.UserQueryVO;
 import com.smartteaching.entity.user.User;
 import com.smartteaching.mapper.OrgMapper;
-import com.smartteaching.mapper.UserMapper;
+import com.smartteaching.mapper.UserExtMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +48,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     @Autowired
-    private UserMapper userMapper;
+    private UserExtMapper userMapper;
 
     @Autowired
     private OrgMapper orgMapper;
