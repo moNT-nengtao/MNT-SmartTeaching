@@ -17,7 +17,8 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:8081}")
+    // 允许来源：开发模式 Vite(5173) + 生产模式 Nginx(8888) + 单体遗留端口
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:8081,http://localhost:8888}")
     private String[] allowedOrigins;
 
     @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH}")
