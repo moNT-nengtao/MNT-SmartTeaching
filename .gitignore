@@ -1,18 +1,32 @@
-#后端
-smart-teaching-backend/target/
-smart-teaching-backend/.idea/
-smart-teaching-backend/*.iml
-smart-teaching-backend/logs/
-smart-teaching-backend/*.log
+# ==================== 后端（微服务工程 smart-teaching-cloud）====================
+smart-teaching-cloud/**/target/
+smart-teaching-cloud/**/*.log
+smart-teaching-cloud/*.log
+smart-teaching-cloud/token.txt
+smart-teaching-cloud/**/.idea/
+smart-teaching-cloud/**/*.iml
 
-#前端
+# ==================== 前端（smart-teaching-web）====================
 smart-teaching-web/node_modules/
 smart-teaching-web/dist/
 smart-teaching-web/.vite/
+smart-teaching-web/*.log*
+smart-teaching-web/build.bat - 快捷方式.lnk
 
-#本地nginx工具
+# ==================== 单体备份（历史版本，仅作本地存档，不入库）====================
+smart-teaching-backend/
+
+# ==================== 本地运行环境（需自行下载，不入库）====================
+nacos-server-3.2.4/
 nginx-1.31.3/
 
-#系统文件
+# ==================== 日志 / 临时文件 ====================
+*.log
+derby.log
+
+# ==================== IDE / 系统文件 ====================
+.vscode/
+.idea/
+*.iml
 .DS_Store
 Thumbs.db
