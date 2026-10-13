@@ -5,47 +5,18 @@
 # 依次启动：MySQL(服务) -> Redis(服务) -> Nacos -> 9个微服务 -> 前端(Vite 5173)
 # 日志统一写入各目录 .log 文件，任务栏不会出现服务黑框
 # ============================================================
-
+. "$PSScriptRoot\lib\common.ps1"
 $ErrorActionPreference = 'Continue'
-
-# ---------- 路径与常量（按需修改为本地实际路径） ----------
-$JAVA_BIN   = 'C:\Program Files\Java\jdk-23\bin\javaw.exe'
-$BASE       = Join-Path $PSScriptRoot 'smart-teaching-cloud'
-$NACOS_DIR  = Join-Path $PSScriptRoot 'nacos-server-3.2.4'
-$NACOS      = Join-Path $NACOS_DIR 'nacos'
-$WEB_DIR    = Join-Path $PSScriptRoot 'smart-teaching-web'
-$NODE_EXE   = 'C:\Program Files\nodejs\node.exe'
-
-$SERVICES = @(
-    'gateway-service','uaa-service','course-service','selection-score-service',
-    'attendance-service','warning-service','ai-service','analysis-service','teaching-service'
-)
-$PORTS = @{ 'gateway-service'=8080; 'uaa-service'=8081; 'course-service'=8082;
-            'selection-score-service'=8083; 'attendance-service'=8084; 'warning-service'=8085;
-            'ai-service'=8086; 'analysis-service'=8087; 'teaching-service'=8088 }
-
-# ---------- 工具函数 ----------
-function Test-Port([int]$port) {
-    $c = New-Object Net.Sockets.TcpClient
-    try { $c.Connect('127.0.0.1', $port); $c.Close(); return $true }
-    catch { return $false }
-}
-
-function Start-Hidden([string]$file, [string[]]$argList, [string]$log, [string]$workDir = '') {
-    $p = @{ FilePath = $file; ArgumentList = $argList; WindowStyle = 'Hidden'; RedirectStandardOutput = $log; RedirectStandardError = "$log.err" }
-    if ($workDir) { $p.WorkingDirectory = $workDir }
-    Start-Process @p | Out-Null
-}
 
 # ---------- 0. 启动条件自检 ----------
 Write-Host '[0/7] 环境自检（缺少组件将中止启动）...'
 $missing = @()
 
 if (-not (Test-Path $JAVA_BIN)) {
-    $missing += "JDK：未找到 $JAVA_BIN ，请安装 JDK 17+，或修改脚本顶部 JAVA_BIN 变量指向你的 javaw.exe"
+    $missing += "JDK：未找到 $JAVA_BIN ，请安装 JDK 17+，或修改 lib\common.ps1 顶部 JAVA_BIN 变量指向你的 javaw.exe"
 }
 if (-not (Test-Path $NODE_EXE)) {
-    $missing += "Node.js：未找到 $NODE_EXE ，请安装 Node.js 18+，或修改脚本顶部 NODE_EXE 变量指向你的 node.exe"
+    $missing += "Node.js：未找到 $NODE_EXE ，请安装 Node.js 18+，或修改 lib\common.ps1 顶部 NODE_EXE 变量指向你的 node.exe"
 }
 if (-not (Get-Service -Name 'MySQL80' -ErrorAction SilentlyContinue)) {
     $missing += 'MySQL：系统服务 MySQL80 不存在，请安装 MySQL 8.x 并注册为 Windows 服务（服务名 MySQL80）'
@@ -54,7 +25,7 @@ if (-not (Get-Service -Name 'Redis' -ErrorAction SilentlyContinue)) {
     $missing += 'Redis：系统服务 Redis 不存在，请安装 Redis 并注册为 Windows 服务（服务名 Redis）'
 }
 if (-not (Test-Path "$NACOS\target\nacos-server.jar")) {
-    $missing += "Nacos：未找到 $NACOS\target\nacos-server.jar ，请将 nacos-server-3.2.4 解压到仓库同级目录"
+    $missing += "Nacos：未找到 $NACOS\target\nacos-server.jar ，请将 nacos-server-3.2.4 解压到仓库根目录"
 }
 if (-not (Test-Path "$WEB_DIR\node_modules")) {
     $missing += '前端依赖：缺少 smart-teaching-web/node_modules ，请在 smart-teaching-web 目录执行 npm install'
@@ -169,6 +140,7 @@ Write-Host ''
 Write-Host '访问入口:'
 Write-Host '  前端页面  http://localhost:5173  (Vite dev，已代理 /api -> 网关 8080)'
 Write-Host '  网关接口  http://localhost:8080/api/xxx'
-Write-Host '  Nacos控制台 http://localhost:18081/nacos  (nacos/nacos)'
+Write-Host '  Nacos控制台 http://localhost:8089/nacos  (nacos/nacos)'
 Write-Host ''
-Write-Host '一键停止所有服务：双击本目录下的 stop-all.cmd'
+Write-Host '一键停止所有服务（含 Nginx）：双击本目录下的 stop-all.cmd'
+Write-Host '生产部署（Nginx）：双击本目录下的 start-prod.cmd（页面 http://localhost:8888）'

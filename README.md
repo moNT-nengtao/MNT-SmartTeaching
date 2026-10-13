@@ -140,10 +140,11 @@ MNT-SmartTeaching/
 │   └── *-service/              # 8 个业务服务
 ├── smart-teaching-web/         # 前端 Vue3 工程
 ├── sql/                        # 数据库初始化脚本
-├── scripts/                    # 全部脚本
-│   ├── start-all / stop-all    # 开发模式一键启动 / 停止（Nacos + 9 服务 + Vite）
+├── scripts/                    # 全部脚本（公共定义统一在 lib\common.ps1）
+│   ├── start-all / stop-all    # 开发模式一键启动 / 停止（Nacos + 9 服务 + Vite + Nginx）
 │   ├── start-prod / stop-prod  # 生产模式启动 / 停止（Nginx 托管 + 反向代理）
 │   ├── build-web               # 单独构建前端 dist
+│   ├── lib/common.ps1          # 路径 / 端口 / 工具函数（各脚本共用）
 │   └── nginx/                  # Nginx 生产配置模板
 └── README.md
 ```
