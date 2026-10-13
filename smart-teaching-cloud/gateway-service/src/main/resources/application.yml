@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 网关作为注册中心消费者，无需把自己注册进去（避免无意义占用）
+        register-enabled: true
+# 网关日志级别
+logging:
+  level:
+    org.springframework.cloud.gateway: info
