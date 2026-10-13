@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartteaching.mapper.ScheduleMapper">
+
+    <select id="getScheduleWeeklyQuery"
+            resultType="com.smartteaching.common.vo.schedule.ScheduleWeeklyQueryVO$CourseItem">
+        SELECT
+            cs.id,
+            c.name AS courseName,
+            u.real_name AS teacherName,
+            cs.room AS classroom,
+            cs.color,
+            cs.day AS weekday,
+            cs.lesson AS lesson,
+            cs.week AS weekJson,
+            c.description AS memo
+        FROM course_schedule cs
+                 LEFT JOIN course c ON c.id = cs.course_id
+                 LEFT JOIN sys_user u ON u.id = cs.teacher_id
+        WHERE JSON_CONTAINS(cs.week, CAST(#{week} AS JSON))
+          AND cs.status = 1
+          AND c.status = 1
+          AND cs.class_id = (
+            SELECT class_id FROM sys_user WHERE id = #{studentId}
+        )
+        ORDER BY cs.day, cs.lesson
+    </select>
+
+</mapper>
