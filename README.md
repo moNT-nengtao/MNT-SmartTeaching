@@ -99,7 +99,7 @@ MySQL → Redis → Nacos → 9 个微服务 → 前端 Vite
 |---|---|---|
 | 前端页面 | http://localhost:5173 | Vite 开发模式，/api 已代理到网关 |
 | 网关接口 | http://localhost:8080/api/xxx | 后端接口统一入口 |
-| Nacos 控制台 | http://localhost:18081/nacos | 账号 nacos / nacos |
+| Nacos 控制台 | http://localhost:8089/nacos | 账号 nacos / nacos |
 
 登录测试账号 `admin / 123456`（管理员），教师、学生账号由管理员在系统内创建。
 
@@ -119,7 +119,7 @@ MySQL → Redis → Nacos → 9 个微服务 → 前端 Vite
 ```
 MNT-SmartTeaching/
 ├── smart-teaching-cloud/       # 后端微服务工程（11 个 Maven 模块）
-│   ├── common/                 # 公共模块
+│   ├── common/                 # 公共模块（工具/异常/公共配置/公共 Mapper）
 │   ├── api/                    # OpenFeign 接口契约
 │   ├── gateway-service/        # 网关
 │   └── *-service/              # 8 个业务服务
