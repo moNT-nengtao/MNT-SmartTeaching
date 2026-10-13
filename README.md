@@ -129,8 +129,6 @@ MNT-SmartTeaching/
 │   └── *-service/              # 8 个业务服务
 ├── smart-teaching-web/         # 前端 Vue3 工程
 ├── sql/                        # 数据库初始化脚本
-├── docs/                       # 项目文档
-├── tools/                      # 开发辅助脚本
 ├── start-all.cmd / .ps1        # 一键启动（含环境自检）
 ├── stop-all.cmd / .ps1         # 一键停止
 └── README.md
