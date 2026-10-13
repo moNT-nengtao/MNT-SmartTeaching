@@ -1,0 +1,31 @@
+序号	表名	说明
+1	user	用户表（含盐字段）
+2	user_login_log	登录日志
+3	sys_role	系统角色表 ✨新增
+4	sys_user_role	用户角色关联表 ✨新增
+5	org_college	学院表
+6	org_major	专业表
+7	org_class	班级表
+8	course	课程表
+9	course_schedule	排课表（索引已修复）
+10	selection_config	选课配置表
+11	selection_record	选课记录表
+12	score	成绩表
+13	score_abnormal	成绩异常筛查表
+14	attendance_session	考勤会话表
+15	attendance_record	考勤记录表
+16	notice	公告表（含范围字段）
+17	notice_read_record	公告已读记录表
+18	qa_tag	问答标签表
+19	qa_question	问答问题表
+20	qa_question_tag	问题-标签关联表
+21	qa_reply	问答回复表
+22	qa_question_like	问题点赞表 ✨新增
+23	qa_reply_like	回复点赞表 ✨新增
+24	ai_chat_record	AI对话记录表（含课程ID）
+25	ai_daily_usage	AI每日调用统计
+26	student_schedule_opt	课表个性化设置
+27	schedule_reminder	课表提醒设置
+28	warning_record	学业预警表（含学期）
+29	evaluation	教学评价表（含学期）
+30	system_config	系统配置表
