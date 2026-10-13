@@ -33,3 +33,4 @@ Thumbs.db
 
 # 文档转换临时产物
 _docx_task/
+scripts/nginx/nginx-prod.conf

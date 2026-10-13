@@ -84,17 +84,17 @@ cd smart-teaching-web
 npm install
 ```
 
-### 4. 一键启动
+### 4. 一键启动（开发模式）
 
-双击仓库根目录 `start-all.cmd`，静默启动、日志落盘、后台运行：
+双击 `scripts/start-all.cmd`，静默启动、日志落盘、后台运行：
 
 ```
 MySQL → Redis → Nacos → 9 个微服务 → 前端 Vite
 ```
 
-启动完成后自动汇总各端口状态（OK / DOWN）。
+启动完成后自动汇总各端口状态（OK / DOWN）。日常开发改代码即时生效，页面入口 http://localhost:5173。
 
-### 5. 验证
+### 5. 验证（开发模式）
 
 | 入口 | 地址 | 说明 |
 |---|---|---|
@@ -104,16 +104,30 @@ MySQL → Redis → Nacos → 9 个微服务 → 前端 Vite
 
 登录测试账号 `admin / 123456`（管理员），教师、学生账号由管理员在系统内创建。
 
-### 6. 停止
+### 6. 生产部署（Nginx）
 
-双击 `stop-all.cmd`，停止 Nacos、微服务与前端（MySQL / Redis 保留运行）。
+构建前端并通过 Nginx 托管，贴近真实部署：双击 `scripts/start-prod.cmd`，自动完成 环境自检 → 构建前端 → 生成 Nginx 配置 → 启动 Nginx → 校验 ：
 
-### 7. 常见问题
+```
+页面入口  http://localhost:8888   （Nginx 托管 dist，/api 反向代理到网关 8080）
+停止部署  scripts/stop-prod.cmd
+```
+
+- 依赖后端已运行（网关 8080 未启动会提示先跑 `start-all.cmd`）；前端改动需重新 `start-prod.cmd`（或 `scripts/build-web.cmd` 单独构建）
+- 默认端口 8888（80 常被占用）；如需更换，改 `scripts/start-prod.ps1` 顶部 `$Port`
+- 项目位于中文路径时，脚本自动在 `C:\Users\Public` 建立 junction 映射，以纯 ASCII 路径运行 Nginx（Windows 版 Nginx 无法直接处理中文路径）
+
+### 7. 停止
+
+双击 `scripts/stop-all.cmd`，停止 Nacos、微服务与前端（MySQL / Redis 保留运行）；生产模式单独用 `scripts/stop-prod.cmd` 停止 Nginx。
+
+### 8. 常见问题
 
 - **服务全部 DOWN**：检查 MySQL / Redis 是否运行、Nacos 是否就绪，日志在 `smart-teaching-cloud/<模块>/target/*.log`
 - **前端 404 / 接口不通**：确认网关 8080 已启动，前端 /api 代理指向网关
-- **端口被占用**：服务端口固定 8080-8088，释放占用或修改服务配置
+- **端口被占用**：服务端口固定 8080-8088，释放占用或修改服务配置；生产页面 8888 被占用则改 `start-prod.ps1` 顶部 `$Port`
 - **Nacos 启动卡住**：确认已解压 nacos-server-3.2.4 且 JDK 匹配，日志见 `nacos-server-3.2.4/nacos-start.log`
+- **生产模式页面打不开**：先跑 `start-all.cmd` 起后端，再跑 `start-prod.cmd`；Nginx 日志在 `nginx-1.31.3/logs/error.log`
 
 ## 目录结构
 
@@ -126,8 +140,11 @@ MNT-SmartTeaching/
 │   └── *-service/              # 8 个业务服务
 ├── smart-teaching-web/         # 前端 Vue3 工程
 ├── sql/                        # 数据库初始化脚本
-├── start-all.cmd / .ps1        # 一键启动（含环境自检）
-├── stop-all.cmd / .ps1         # 一键停止
+├── scripts/                    # 全部脚本
+│   ├── start-all / stop-all    # 开发模式一键启动 / 停止（Nacos + 9 服务 + Vite）
+│   ├── start-prod / stop-prod  # 生产模式启动 / 停止（Nginx 托管 + 反向代理）
+│   ├── build-web               # 单独构建前端 dist
+│   └── nginx/                  # Nginx 生产配置模板
 └── README.md
 ```
 

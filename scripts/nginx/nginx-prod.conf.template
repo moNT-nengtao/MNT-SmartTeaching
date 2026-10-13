@@ -1,0 +1,51 @@
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+    keepalive_timeout  65;
+
+    # 按内容类型设置静态资源缓存时间
+    map $sent_http_content_type $expires {
+        default                    off;
+        ~*text/css                 7d;
+        ~*application/javascript   7d;
+        ~*image/                   30d;
+    }
+
+    server {
+        listen       __PORT__;
+        server_name  localhost;
+
+        root  __WEB_ROOT__;
+        index index.html;
+
+        # SPA 前端路由回退（刷新不 404）
+        location / {
+            try_files $uri $uri/ /index.html;
+            expires $expires;
+        }
+
+        # API 反向代理到网关（生产模式同源 /api）
+        location /api/ {
+            proxy_pass http://127.0.0.1:__GATEWAY_PORT__;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 60s;
+            proxy_read_timeout 300s;
+        }
+
+        # 上传文件访问（网关转发至 uaa-service）
+        location /files/ {
+            proxy_pass http://127.0.0.1:__GATEWAY_PORT__;
+            proxy_set_header Host $host;
+        }
+    }
+}
