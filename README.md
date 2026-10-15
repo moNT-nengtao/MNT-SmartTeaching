@@ -1,7 +1,24 @@
-# MNT-SmartTeaching 智能教学管理系统
+<div align="center">
 
-高校轻量化教务管理系统 · Spring Cloud 微服务 · Spring Boot 4 + Vue3
-仓库：https://github.com/moNT-nengtao/MNT-SmartTeaching.git
+# MNT · SmartTeaching
+
+### 高校智能教学管理系统 —— Spring Cloud + Vue3 微服务实践
+
+![Java](https://img.shields.io/badge/Java-17-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.x-green)
+![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.x-6DB33F)
+![Vue](https://img.shields.io/badge/Vue-3.x-42b883)
+![Element Plus](https://img.shields.io/badge/Element%20Plus-2.x-409EFF)
+![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.x-blue)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-lightblue)
+![Redis](https://img.shields.io/badge/Redis-7.x-red)
+![Nacos](https://img.shields.io/badge/Nacos-3.2.x-000000)
+
+</div>
+
+---
+
+高校轻量化教务管理系统，覆盖管理员 / 教师 / 学生三角色完整业务闭环。仓库：https://github.com/moNT-nengtao/MNT-SmartTeaching.git
 
 覆盖用户权限、课程排课、选课成绩、考勤签到、学业预警、AI 助教、数据仪表盘、作业通知等完整教务闭环，管理员 / 教师 / 学生三角色统一入口，各角色拥有独立工作台。
 
