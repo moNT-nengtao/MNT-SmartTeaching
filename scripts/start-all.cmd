@@ -11,4 +11,6 @@ echo 请保持本窗口打开，启动完成后将显示各端口状态。
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-all.ps1" %*
 echo.
-pause
+echo 按任意键关闭本窗口...
+pause >nul
+exit

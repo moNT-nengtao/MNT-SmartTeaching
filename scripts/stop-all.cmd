@@ -7,4 +7,6 @@ chcp 936 >nul
 echo 正在停止 MNT-SmartTeaching 项目进程...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0stop-all.ps1"
 echo.
-pause
+echo 按任意键关闭本窗口...
+pause >nul
+exit
