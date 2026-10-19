@@ -1,9 +1,9 @@
 ﻿# ============================================================
 # MNT-SmartTeaching 一键停止脚本
-# 停止：Nacos + 9个微服务 + 前端 Vite + 生产模式 Nginx
+# 停止：Nginx(8888) + 9个微服务 + Nacos + 前端 Vite(-Dev 模式)
 # 保留：MySQL / Redis（系统常驻服务，不随项目关闭）
 # ============================================================
-. "$PSScriptRoot\lib\common.ps1"
+. "$PSScriptRoot\tools\lib\common.ps1"
 $ErrorActionPreference = 'Continue'
 $killed = 0
 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {

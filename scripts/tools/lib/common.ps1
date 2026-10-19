@@ -1,11 +1,13 @@
 ﻿# ============================================================
 #  MNT-SmartTeaching 公共定义与工具库
-#  被 scripts/ 下各脚本 dot-source（. "$PSScriptRoot\lib\common.ps1"）
+#  被 scripts/ 下各脚本 dot-source（. "$PSScriptRoot\..\lib\common.ps1"）
 #  统一：路径基准 / 常量 / 输出函数 / 端口与进程工具
+#  本文件位于 scripts/tools/lib/ 下
 # ============================================================
 
-$ScriptsRoot = Split-Path -Parent $PSScriptRoot        # scripts/
-$RepoRoot    = Split-Path -Parent $ScriptsRoot         # 仓库根
+$ToolsRoot  = Split-Path -Parent $PSScriptRoot        # scripts/tools/
+$ScriptsRoot = Split-Path -Parent $ToolsRoot          # scripts/
+$RepoRoot    = Split-Path -Parent $ScriptsRoot        # 仓库根
 
 # ---------- 路径与常量（按机器实际环境修改此处） ----------
 $JAVA_BIN   = 'C:\Program Files\Java\jdk-23\bin\javaw.exe'
@@ -21,7 +23,7 @@ $PublicDir  = 'C:\Users\Public'
 $NginxLink  = Join-Path $PublicDir 'mnt-nginx'          # ASCII junction -> nginx 目录
 $DistLink   = Join-Path $PublicDir 'mnt-dist'           # ASCII junction -> dist
 $NginxExe   = Join-Path $NginxLink 'nginx.exe'
-$NginxConfTemplate = Join-Path $ScriptsRoot 'nginx\nginx-prod.conf.template'
+$NginxConfTemplate = Join-Path $ToolsRoot 'nginx\nginx-prod.conf.template'
 $NginxRuntimeConf  = Join-Path $NginxLink 'conf\nginx-prod.conf'
 
 $SERVICES = @(
@@ -78,4 +80,35 @@ function Stop-Nginx {
         & $NginxExe -p "$NginxLink" -c "$NginxRuntimeConf" -s stop
         Start-Sleep -Seconds 1
     }
+}
+
+# 生成并写入 Nginx 运行时配置（模板替换端口/路径）
+function Write-NginxConf {
+    $webRoot = $DistLink.Replace('\', '/')     # conf 中使用 ASCII 路径（junction 视图）
+    $conf = (Get-Content $NginxConfTemplate -Raw -Encoding UTF8)
+    $conf = $conf.Replace('__PORT__', "$ProdPort").Replace('__WEB_ROOT__', $webRoot).Replace('__GATEWAY_PORT__', "$GatewayPort")
+    Set-Content -Path $NginxRuntimeConf -Value $conf -Encoding ASCII
+}
+
+# 启动 Nginx（8888），已运行则跳过；残留 pid 自动清理
+function Start-Nginx {
+    if (Test-Port $ProdPort) { Write-Host "      端口 $ProdPort 已在监听，Nginx 跳过"; return $true }
+    # 清理残留 pid（进程已死但 pid 文件还在的情况）
+    if (Test-Path (Join-Path $NginxLink 'logs\nginx.pid')) {
+        Remove-Item (Join-Path $NginxLink 'logs\nginx.pid') -Force -ErrorAction SilentlyContinue
+    }
+    Write-NginxConf
+    Start-Process -FilePath $NginxExe -ArgumentList ('-p ' + $NginxLink + ' -c ' + $NginxRuntimeConf) -WindowStyle Hidden | Out-Null
+    Start-Sleep -Seconds 2
+    if (-not (Test-Path (Join-Path $NginxLink 'logs\nginx.pid'))) {
+        Write-Host '      [!] Nginx 启动失败，请查看 nginx 错误日志'; return $false
+    }
+    # 校验页面
+    for ($i = 0; $i -lt 10; $i++) {
+        try {
+            $r = Invoke-WebRequest -Uri "http://127.0.0.1:$ProdPort" -UseBasicParsing -TimeoutSec 3
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch { Start-Sleep -Seconds 1 }
+    }
+    return $false
 }

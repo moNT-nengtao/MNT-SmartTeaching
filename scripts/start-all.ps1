@@ -1,11 +1,13 @@
 ﻿# ============================================================
 # MNT-SmartTeaching 一键启动脚本（全部静默后台，无控制台窗口）
-# 启动前自动检查环境：JDK / Node / MySQL / Redis / Nacos / 前端依赖 / 后端构建产物
+# 启动前自动检查环境：JDK / Node / MySQL / Redis / Nacos / 后端构建产物 / 前端依赖
 # 缺少任意组件时直接提示，不启动
-# 依次启动：MySQL(服务) -> Redis(服务) -> Nacos -> 9个微服务 -> 前端(Vite 5173)
-# 日志统一写入各目录 .log 文件，任务栏不会出现服务黑框
+# 依次启动：MySQL(服务) -> Redis(服务) -> Nacos -> 9个微服务 -> 前端构建 -> Nginx(8888)
+# 页面统一入口：http://localhost:8888 （Nginx 反向代理，/api 转发网关 8080）
+# 可选参数 -Dev：额外启动 Vite 开发服务器(5173)，便于前端热更新调试
 # ============================================================
-. "$PSScriptRoot\lib\common.ps1"
+param([switch]$Dev)
+. "$PSScriptRoot\tools\lib\common.ps1"
 $ErrorActionPreference = 'Continue'
 
 # ---------- 0. 启动条件自检 ----------
@@ -13,10 +15,10 @@ Write-Host '[0/7] 环境自检（缺少组件将中止启动）...'
 $missing = @()
 
 if (-not (Test-Path $JAVA_BIN)) {
-    $missing += "JDK：未找到 $JAVA_BIN ，请安装 JDK 17+，或修改 lib\common.ps1 顶部 JAVA_BIN 变量指向你的 javaw.exe"
+    $missing += "JDK：未找到 $JAVA_BIN ，请安装 JDK 17+，或修改 tools\lib\common.ps1 顶部 JAVA_BIN 变量指向你的 javaw.exe"
 }
 if (-not (Test-Path $NODE_EXE)) {
-    $missing += "Node.js：未找到 $NODE_EXE ，请安装 Node.js 18+，或修改 lib\common.ps1 顶部 NODE_EXE 变量指向你的 node.exe"
+    $missing += "Node.js：未找到 $NODE_EXE ，请安装 Node.js 18+，或修改 tools\lib\common.ps1 顶部 NODE_EXE 变量指向你的 node.exe"
 }
 if (-not (Get-Service -Name 'MySQL80' -ErrorAction SilentlyContinue)) {
     $missing += 'MySQL：系统服务 MySQL80 不存在，请安装 MySQL 8.x 并注册为 Windows 服务（服务名 MySQL80）'
@@ -119,28 +121,51 @@ for ($i = 0; $i -lt 45; $i++) {
     Start-Sleep -Seconds 2
 }
 
-# ---------- 5. 前端 Vite ----------
-Write-Host '[5/7] 前端 Vite (5173)...'
-if (Test-Port 5173) { Write-Host '      已在运行，跳过' }
-else {
-    Start-Hidden $NODE_EXE @("$WEB_DIR\node_modules\vite\bin\vite.js") "$WEB_DIR\vite-dev.log" $WEB_DIR
-    Write-Host '      已启动（日志 vite-dev.log）'
-    Start-Sleep -Seconds 8
+# ---------- 5. 前端构建（dist 缺失时自动构建） ----------
+Write-Host '[5/7] 前端构建（生产包 dist）...'
+if (Test-Path (Join-Path $DistDir 'index.html')) {
+    Write-Host '      dist 已存在，跳过构建（如需强制重建：scripts\tools\build-web.cmd）'
+} else {
+    Write-Host '      dist 缺失，执行 npm run build ...'
+    Push-Location $WEB_DIR
+    try { & npm run build; if ($LASTEXITCODE -ne 0) { Write-Host '      [!] 前端构建失败，请查看上方 npm 报错'; exit 1 } }
+    finally { Pop-Location }
+    if (-not (Test-Path (Join-Path $DistDir 'index.html'))) {
+        Write-Host '      [!] 构建产物缺失：dist/index.html 不存在'; exit 1
+    }
+    Write-Host '      前端构建完成'
 }
 
-# ---------- 6. 汇总 ----------
-Write-Host '[6/7] 状态汇总：'
-$summary = @('Nacos:9848','Gateway:8080','uaa:8081','course:8082','selection-score:8083','attendance:8084','warning:8085','ai:8086','analysis:8087','teaching:8088','Frontend:5173','MySQL:3306','Redis:6379')
+# ---------- 6. Nginx 反向代理（8888） ----------
+Write-Host '[6/7] Nginx 反向代理 (8888)...'
+Ensure-AsciiLinks
+if (Start-Nginx) { Write-Host '      8888 前端页面可访问' } else { Write-Host '      [!] 8888 页面校验未通过，请查看 nginx 日志' }
+
+# ---------- 6.5 可选：Vite 开发服务器（-Dev） ----------
+if ($Dev) {
+    Write-Host '[6.5] Vite 开发服务器 (5173) -Dev 模式...'
+    if (Test-Port 5173) { Write-Host '      已在运行，跳过' }
+    else {
+        Start-Hidden $NODE_EXE @("$WEB_DIR\node_modules\vite\bin\vite.js") "$WEB_DIR\vite-dev.log" $WEB_DIR
+        Write-Host '      已启动（日志 vite-dev.log），热更新调试用'
+        Start-Sleep -Seconds 8
+    }
+}
+
+# ---------- 7. 汇总 ----------
+Write-Host '[7/7] 状态汇总：'
+$summary = @('Nacos:9848','Gateway:8080','uaa:8081','course:8082','selection-score:8083','attendance:8084','warning:8085','ai:8086','analysis:8087','teaching:8088','MySQL:3306','Redis:6379','Nginx页面:8888')
 foreach ($s in $summary) {
     $pp = [int]($s -replace '.*:','')
     $status = if (Test-Port $pp) { 'OK' } else { 'DOWN' }
     Write-Host ("      {0,-18} {1}" -f $s, $status)
 }
+if ($Dev) { $s5173 = if (Test-Port 5173) { 'OK' } else { 'DOWN' }; Write-Host ("      {0,-18} {1}" -f 'Vite调试:5173', $s5173) }
 Write-Host ''
-Write-Host '访问入口:'
-Write-Host '  前端页面  http://localhost:5173  (Vite dev，已代理 /api -> 网关 8080)'
+Write-Host '访问入口（统一走 Nginx 反向代理）：'
+Write-Host '  前端页面  http://localhost:8888'
 Write-Host '  网关接口  http://localhost:8080/api/xxx'
 Write-Host '  Nacos控制台 http://localhost:8089/nacos  (nacos/nacos)'
+if ($Dev) { Write-Host '  Vite调试  http://localhost:5173  （仅 -Dev 模式）' }
 Write-Host ''
 Write-Host '一键停止所有服务（含 Nginx）：双击本目录下的 stop-all.cmd'
-Write-Host '生产部署（Nginx）：双击本目录下的 start-prod.cmd（页面 http://localhost:8888）'
